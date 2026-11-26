@@ -1,0 +1,281 @@
+--- a/src/simplify.cu
++++ b/src/simplify.cu
+@@ -137,6 +137,61 @@
+ }
+ 
+ 
++// Full simplicial link condition for an interior edge of a triangle complex.
++// Vertex links contain both vertices and edges: counting common neighbors alone
++// misses the opposite edge of a tetrahedron and can create duplicate face fins.
++static __device__ bool has_valid_collapse_link(
++    int u,
++    int v,
++    const int3* faces,
++    const int* vert2face,
++    const int* vert2face_offset
++) {
++    int edge_face_count = 0;
++    int first_face = -1;
++    int a = -1, b = -1;
++    int first_direction = 0;
++    for (int i = vert2face_offset[u]; i < vert2face_offset[u+1]; i++) {
++        int fid = vert2face[i];
++        int3 f = faces[fid];
++        int p = f.x == u ? f.y : (f.y == u ? f.z : f.x);
++        int q = f.x == u ? f.z : (f.y == u ? f.x : f.y);
++        if (p == u || q == u || p == q) return false;
++        if (p != v && q != v) continue;
++        int opposite = p == v ? q : p;
++        int direction = p == v ? 1 : -1;
++        if (++edge_face_count > 2) return false;
++        if (edge_face_count == 1) {
++            first_face = fid;
++            a = opposite;
++            first_direction = direction;
++        } else {
++            if (fid == first_face || opposite == a || direction == first_direction) return false;
++            b = opposite;
++        }
++    }
++    if (edge_face_count != 2) return false;
++
++    // Each face contributes its opposite edge to its center vertex's link.
++    // Lk(uv) consists of a and b, so no other vertex or any edge may be shared.
++    for (int i = vert2face_offset[u]; i < vert2face_offset[u+1]; i++) {
++        int3 fu = faces[vert2face[i]];
++        int p = fu.x == u ? fu.y : (fu.y == u ? fu.z : fu.x);
++        int q = fu.x == u ? fu.z : (fu.y == u ? fu.x : fu.y);
++        for (int j = vert2face_offset[v]; j < vert2face_offset[v+1]; j++) {
++            int3 fv = faces[vert2face[j]];
++            int r = fv.x == v ? fv.y : (fv.y == v ? fv.z : fv.x);
++            int s = fv.x == v ? fv.z : (fv.y == v ? fv.x : fv.y);
++            if (r == v || s == v || r == s) return false;
++            if ((p == r || p == s) && p != a && p != b) return false;
++            if ((q == r || q == s) && q != a && q != b) return false;
++            if ((p == r && q == s) || (p == s && q == r)) return false;
++        }
++    }
++    return true;
++}
++
++
+ /**
+  * Get the cost for each edge collapse
+  * 
+@@ -175,6 +230,26 @@
+     int e0 = int(e >> 32);
+     int e1 = int(e & 0xFFFFFFFF);
+ 
++    // Freeze every boundary endpoint, including boundaries introduced by splits.
++    if (vert_is_boundary[e0] || vert_is_boundary[e1] ||
++        !has_valid_collapse_link(e0, e1, faces, vert2face, vert2face_offset)) {
++        edge_collapse_costs[tid] = INFINITY;
++        return;
++    }
++
++    // Freeze B union N(B): every corner of a boundary-incident triangle must
++    // remain fixed, including coincident boundary fans with distinct indices.
++    for (int side = 0; side < 2; side++) {
++        int endpoint = side == 0 ? e0 : e1;
++        for (int i = vert2face_offset[endpoint]; i < vert2face_offset[endpoint+1]; i++) {
++            int3 f = faces[vert2face[i]];
++            if (vert_is_boundary[f.x] || vert_is_boundary[f.y] || vert_is_boundary[f.z]) {
++                edge_collapse_costs[tid] = INFINITY;
++                return;
++            }
++        }
++    }
++
+     // get edge vertices
+     Vec3f v0(vertices[e0]);
+     Vec3f v1(vertices[e1]);
+@@ -218,7 +293,7 @@
+     }
+     cost += lambda_skinny * skinny_cost * edge_length2;
+ 
+-    edge_collapse_costs[tid] = cost;
++    edge_collapse_costs[tid] = isfinite(cost) ? cost : INFINITY;
+ }
+ 
+ 
+@@ -251,19 +326,21 @@
+ 
+ 
+ /**
+- * Propagate cost to neighboring faces
++ * Claim the closed endpoint one-ring vertices by cost and edge id
+  * 
+  * @param edges: the buffer for edges, shape (E)
++ * @param faces: the faces of the mesh, shape (F)
+  * @param vert2face: the buffer for neighboring face ids, shape (total_neighbor_face_cnt)
+  * @param vert2face_offset: the buffer for neighboring face ids offset, shape (V+1)
+  * @param edge_collapse_costs: the buffer for edge collapse costs, shape (E)
+  * @param V: the number of vertices
+  * @param F: the number of faces
+  * @param E: the number of edges
+- * @param propagated_costs: the buffer for edge collapse costs propagated, shape (F)
++ * @param propagated_costs: the buffer for vertex ownership costs, shape (V)
+  */
+ static __global__ void propagate_cost_kernel(
+     const uint64_t* edges,
++    const int3* faces,
+     const int* vert2face,
+     const int* vert2face_offset,
+     const float* edge_collapse_costs,
+@@ -275,25 +352,30 @@
+     const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+     if (tid >= E) return;
+ 
++    float edge_cost = edge_collapse_costs[tid];
++    if (!isfinite(edge_cost)) return;
++
+     // get edge
+     uint64_t e = edges[tid];
+     int e0 = int(e >> 32);
+     int e1 = int(e & 0xFFFFFFFF);
+ 
+-    uint64_t cost = pack_key_value_positive(tid, edge_collapse_costs[tid]);
++    uint64_t cost = pack_key_value_positive(tid, edge_cost);
+ 
+-    // propagate cost to neighboring faces
+-    for (int f = vert2face_offset[e0]; f < vert2face_offset[e0+1]; f++) {
+-        atomicMin(reinterpret_cast<unsigned long long*>(&propagated_costs[vert2face[f]]), static_cast<unsigned long long>(cost));
+-    }
+-    for (int f = vert2face_offset[e1]; f < vert2face_offset[e1+1]; f++) {
+-        atomicMin(reinterpret_cast<unsigned long long*>(&propagated_costs[vert2face[f]]), static_cast<unsigned long long>(cost));
++    for (int side = 0; side < 2; side++) {
++        int endpoint = side == 0 ? e0 : e1;
++        for (int i = vert2face_offset[endpoint]; i < vert2face_offset[endpoint+1]; i++) {
++            int3 f = faces[vert2face[i]];
++            atomicMin(reinterpret_cast<unsigned long long*>(&propagated_costs[f.x]), static_cast<unsigned long long>(cost));
++            atomicMin(reinterpret_cast<unsigned long long*>(&propagated_costs[f.y]), static_cast<unsigned long long>(cost));
++            atomicMin(reinterpret_cast<unsigned long long*>(&propagated_costs[f.z]), static_cast<unsigned long long>(cost));
++        }
+     }
+ }
+ 
+ 
+ /**
+- * Propagate cost to neighboring faces
++ * Claim the closed endpoint one-ring vertices by cost and edge id
+  */
+ void propagate_cost(
+     CuMesh& ctx
+@@ -301,10 +383,11 @@
+     size_t V = ctx.vertices.size;
+     size_t F = ctx.faces.size;
+     size_t E = ctx.edges.size;
+-    ctx.propagated_costs.resize(F);
++    ctx.propagated_costs.resize(V);
+     ctx.propagated_costs.fill(std::numeric_limits<uint64_t>::max());
+     propagate_cost_kernel<<<(E+BLOCK_SIZE-1)/BLOCK_SIZE, BLOCK_SIZE>>>(
+         ctx.edges.ptr,
++        ctx.faces.ptr,
+         ctx.vert2face.ptr,
+         ctx.vert2face_offset.ptr,
+         ctx.edge_collapse_costs.ptr,
+@@ -315,6 +398,40 @@
+ }
+ 
+ 
++// Complete selection before any face mutation. Losing candidates must not read
++// face corners concurrently with winners replacing those same corners.
++static __global__ void select_collapse_edges_kernel(
++    const uint64_t* edges,
++    const int3* faces,
++    const int* vert2face,
++    const int* vert2face_offset,
++    const uint64_t* propagated_costs,
++    const int E,
++    float* edge_collapse_costs
++) {
++    const int tid = blockIdx.x * blockDim.x + threadIdx.x;
++    if (tid >= E) return;
++    float cost = edge_collapse_costs[tid];
++    if (!isfinite(cost)) return;
++
++    uint64_t e = edges[tid];
++    int e0 = int(e >> 32);
++    int e1 = int(e & 0xFFFFFFFF);
++    uint64_t pack = pack_key_value_positive(tid, cost);
++    for (int side = 0; side < 2; side++) {
++        int endpoint = side == 0 ? e0 : e1;
++        for (int i = vert2face_offset[endpoint]; i < vert2face_offset[endpoint+1]; i++) {
++            int3 f = faces[vert2face[i]];
++            if (propagated_costs[f.x] != pack || propagated_costs[f.y] != pack ||
++                propagated_costs[f.z] != pack) {
++                edge_collapse_costs[tid] = INFINITY;
++                return;
++            }
++        }
++    }
++}
++
++
+ /**
+  * Collapse edges parallelly
+  * 
+@@ -324,7 +441,6 @@
+  * @param vert2face: the buffer for neighboring face ids, shape (total_neighbor_face_cnt)
+  * @param vert2face_offset: the buffer for neighboring face ids offset, shape (V+1)
+  * @param edge_collapse_costs: the buffer for edge collapse costs, shape (E)
+- * @param propagated_costs: the buffer for edge collapse costs propagated, shape (F)
+  * @param vert_is_boundary: the buffer for boundary vertex indicator, shape (V)
+  * @param V: the number of vertices
+  * @param F: the number of faces
+@@ -340,7 +456,6 @@
+     const int* vert2face,
+     const int* vert2face_offset,
+     const float* edge_collapse_costs,
+-    const uint64_t* propagated_costs,
+     const uint8_t * vert_is_boundary,
+     const int V,
+     const int F,
+@@ -353,20 +468,12 @@
+     if (tid >= E) return;
+ 
+     float cost = edge_collapse_costs[tid];
+-    if (cost > collapse_thresh) return;
++    if (!isfinite(cost) || cost > collapse_thresh) return;
+ 
+     // get edge
+     uint64_t e = edges[tid];
+     int e0 = int(e >> 32);
+     int e1 = int(e & 0xFFFFFFFF);
+-    uint64_t pack = pack_key_value_positive(tid, cost);
+-
+-    for (int f = vert2face_offset[e0]; f < vert2face_offset[e0+1]; f++) {
+-        if (propagated_costs[vert2face[f]] != pack) return;
+-    }
+-    for (int f = vert2face_offset[e1]; f < vert2face_offset[e1+1]; f++) {
+-        if (propagated_costs[vert2face[f]] != pack) return;
+-    }
+ 
+     // collapse edge
+     Vec3f v0(vertices[e0]);
+@@ -452,6 +559,17 @@
+     ctx.faces_map.resize(F + 1);
+     ctx.vertices_map.fill(1);
+     ctx.faces_map.fill(1);
++    // Same-stream kernel ordering keeps all ownership reads before mutations.
++    select_collapse_edges_kernel<<<(E+BLOCK_SIZE-1)/BLOCK_SIZE, BLOCK_SIZE>>>(
++        ctx.edges.ptr,
++        ctx.faces.ptr,
++        ctx.vert2face.ptr,
++        ctx.vert2face_offset.ptr,
++        ctx.propagated_costs.ptr,
++        E,
++        ctx.edge_collapse_costs.ptr
++    );
++    CUDA_CHECK(cudaGetLastError());
+     collapse_edges_kernel<<<(E+BLOCK_SIZE-1)/BLOCK_SIZE, BLOCK_SIZE>>>(
+         ctx.vertices.ptr,
+         ctx.faces.ptr,
+@@ -459,7 +577,6 @@
+         ctx.vert2face.ptr,
+         ctx.vert2face_offset.ptr,
+         ctx.edge_collapse_costs.ptr,
+-        ctx.propagated_costs.ptr,
+         ctx.vert_is_boundary.ptr,
+         V, F, E,
+         collapse_thresh,

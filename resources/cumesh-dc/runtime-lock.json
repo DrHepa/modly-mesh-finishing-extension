@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "source_commit": "d10e54c30ddd03d11472c1431693f985501c7966",
+  "source_url": "https://github.com/visualbruno/CuMesh",
+  "native_license": "MIT; Jianfeng XIANG 2025, retained LICENSE",
+  "controller_license": "GPL-3.0-or-later, retained CONTROLLER-LICENSE",
+  "blender_sha256": "7e70f43bb093fd6d5e4d49c78022a00e204616306ad65daeb12fecb2761ad672",
+  "shared_runtime": {
+    "python": "3.12.16",
+    "torch": "2.12.0+cu130",
+    "numpy": "2.4.6",
+    "policy": "existing extension-owned runtime, read-only, no simplification calls"
+  },
+  "lane": {
+    "os": "Linux",
+    "machine": "aarch64",
+    "glibc_min": "2.39",
+    "device": "NVIDIA GB10",
+    "sm": "12.1",
+    "cuda_sdk": "13.0",
+    "driver_min": "580"
+  },
+  "source_archive": {
+    "size": 184320,
+    "sha256": "7007be29d091053ea8eb18f5a94b435747fbdef75f9e22346aa126a03f5a75e0"
+  },
+  "source_files": {
+    "CONTROLLER-LICENSE": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "LICENSE": "8eef85c2c0648a4d42a898f5e6d8bf35f532c477a6233a9647718b61228d275a",
+    "bindings.cpp": "e2821a1fa505e61acb39c21adc6faf8dd45b79bdf7162cfe178671aa51366c17",
+    "blender_bvh_adapter.py": "9e4bd6ae0ae67fdcff63076e9f30943be594a46f726a77f657c15d1f03a209ef",
+    "blender_bvh_worker.py": "7126aba07c890472f6cd327b17dc4c2b5dc3a611e089c63417ab6a239f5c7092",
+    "cpu_checks.py": "18143447f228d9bca0d2d7c61faad214deb063078961cfdc70a0af9f1b04af99",
+    "dc_driver.py": "5e78bb9b88403fca5ddcd76bdf6eee0f6106fc02c060cbab5d23589f11bb074b",
+    "dc_face_arcs.py": "1b73c57c11e60cd364ef8444b68f5fc6f1734696380ae42bd71fdb767a84c9fb",
+    "dc_roi_witness.py": "0ae68b2ef5b3c8cf6bbd582d249c7c122478cd6baa5b0bf9d2735e492ca417a1",
+    "dc_wrapper.py": "7fc0ea15e4adb1290cddf3d3333fd64be7abb45414bbde0e0642f4cc85ab17eb",
+    "inspect_smoke.py": "85d2c9ebd54d122b9fc6d93cd41ecc71e3cd506d4f747638eee03923693d3443",
+    "runtime-spec.json": "ce60ad7dbbfd51ac668606e24e9f246f53159976b3298c19432706faf7d83d72",
+    "setup.py": "4f6f800b0085408deaad52dc63cd0355fad3a89e5c6b0077f9158b9455fca681",
+    "smoke.obj": "a52294b3808c85b813cb5771dd798e29e266c36d535ae2ab58652d5c3752649f",
+    "src/hash/api.h": "b9a14541d5c332be87a6284b095fe5d1476d6ca1db3d25331d3badc63814cf64",
+    "src/hash/hash.cu": "afd83c0b65d0fcea0c2cf69e2804289200633888b3041598189ac24dbe8d0773",
+    "src/hash/hash.cuh": "c68b22c33377feaa46df1042cb94277d20366f51a9d5b621f858a02fcfe933b4",
+    "src/remesh/api.h": "cf5711397f98e47cf2d1e3bff97902b45d92d0b1be6971297ee5d976125e8dcd",
+    "src/remesh/contour_dual.cu": "8c752924e5499511404c14f30b1527b517b2daba03afb0138a9a71c34952605f",
+    "src/remesh/simple_dual_contour.cu": "764de900ee25a151cf68c4a3374cb7495e32a34b6fce897932eb7de2be78e025",
+    "src/remesh/svox2vert.cu": "1680f944a87cd2ae1cdc96a25e99d99af0db6816174869628fc2238199e49826",
+    "src/utils.h": "4343f8977458e7a025a14ecd6d27bf433cfe3346107a72882e2afecaf4227316"
+  },
+  "qualified_contour_patch_sha256": "f93f98a82f9c3188ff580b721b1ed1c087c2f7af010e9c4bacd7e0d19ce5bcb3",
+  "packaging_delta": "Original MIT CUDA sources/bindings unchanged; GPL controller realizes only proven balanced degree4 checkerboard shared-face arcs with distinct Hermite chord vertices; strict admission and retain-all policy unchanged; CPU frozen-buffer qualification only until native review",
+  "resolutions": {
+    "native_qualified": [
+      32,
+      64
+    ],
+    "resource_admitted": [
+      32,
+      64,
+      128
+    ],
+    "resolution128": "NOT_NATIVE_QUALIFIED"
+  },
+  "network": false,
+  "witness_roi": {
+    "schema": 1,
+    "cli": "--witness-roi <absolute-json>",
+    "scope": "open local-hole witness only; never volume/closed-shell admission",
+    "source": "full untouched input OBJ/BVH",
+    "grid": "explicit input-frame F32 center and scalar extent; voxel=extent/resolution; band1",
+    "omission": "geometrically out-of-box primal incidences only; any in-box sparse gap or unreferenced interior contour is fatal",
+    "boundary": "all open boundary segments exactly outside full protected polygon slab +/-2 voxels plus8voxel margin",
+    "qualification": "CPU_TESTS_AND_NATIVE_WITNESS_PENDING; existing volume qualification unchanged"
+  }
+}

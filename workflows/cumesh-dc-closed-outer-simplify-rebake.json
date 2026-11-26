@@ -1,0 +1,154 @@
+{
+  "id": "a0612f47-aa39-5df2-a206-4513ae1010b6",
+  "name": "Mesh Finishing - CuMesh DC CLOSED Sources, Verified Outer and Rebake",
+  "description": "Before Run, choose an original textured GLB in Load 3D Mesh, then select that SAME original GLB again in UV / Repack + Rebake > Original textured HIGH. This HIGH is required by this template; only other general-node flows may omit it. Inspect Mesh measures the reconstructed geometry before Simplify. Reconstruct and Simplify produce geometry-only meshes; no original appearance is inferred. Native geometry, component correspondence and texture projection gates can reject new or unmatched surfaces. Measured closed-control preset: R64, Blender 8,000 triangles and 256 px rebake. Transfer limits are 0.03 relative / 0.05 world, projection 0.05 and cage 0.02; these case-specific settings permit more drift than standard defaults and are not general defaults. Requires the separately configured optional CuMesh DC runtime. EXPLICIT OPT-IN: verified_outer removes only one proven nested generated inward offset sheet per closed outward source component. Open, ambiguous, touching or over-budget cases fail. This is not a signed-solid or largest-component filter. Source component dropping stays disabled.",
+  "nodes": [
+    {
+      "id": "767760fc-1f8c-58b4-b325-e3f7d90e8e43",
+      "type": "meshNode",
+      "position": {
+        "x": 0,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "source": "file",
+          "filePath": "",
+          "fileName": ""
+        }
+      }
+    },
+    {
+      "id": "c76c9985-fa31-505b-9ec5-c92ca14dd4a2",
+      "type": "extensionNode",
+      "position": {
+        "x": 440,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "drop_below_largest_area_percent": 0.0,
+          "shell_policy": "verified_outer",
+          "resolution": 64,
+          "memory_budget_mib": 8192,
+          "max_output_triangles": 1000000,
+          "timeout_seconds": 180,
+          "repair_mode": "volume"
+        },
+        "extensionId": "mesh-finishing/reconstruct-cumesh-dc"
+      }
+    },
+    {
+      "id": "fbc03c2a-11e8-5710-8729-a76d9490d472",
+      "type": "extensionNode",
+      "position": {
+        "x": 880,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "analysis_mode": "geometry",
+          "timeout_seconds": 600
+        },
+        "extensionId": "mesh-finishing/inspect-mesh"
+      }
+    },
+    {
+      "id": "db7e6fe2-a598-54e7-9204-866474d0ac01",
+      "type": "extensionNode",
+      "position": {
+        "x": 1320,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "simplification_backend": "blender",
+          "triangle_budget": 8000,
+          "max_error_relative": 0.003,
+          "max_error_world": 0.01,
+          "protected_component_triangles": 64,
+          "timeout_seconds": 180
+        },
+        "extensionId": "mesh-finishing/simplify-mesh"
+      }
+    },
+    {
+      "id": "c18c1d3e-7c33-5f57-bb69-912cb3dbe3d9",
+      "type": "extensionNode",
+      "position": {
+        "x": 1760,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "high_poly_path": "",
+          "max_error_relative": 0.03,
+          "max_error_world": 0.05,
+          "resolution": 256,
+          "base_resolution": 0,
+          "normal_resolution": 0,
+          "orm_resolution": 0,
+          "emission_resolution": 0,
+          "projection_distance_relative": 0.05,
+          "cage_extrusion_relative": 0.02,
+          "timeout_seconds": 600
+        },
+        "extensionId": "mesh-finishing/uv-repack-rebake"
+      }
+    },
+    {
+      "id": "e9a47483-b2de-5788-9317-ff7fe2e0f738",
+      "type": "outputNode",
+      "position": {
+        "x": 2200,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {}
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "9aa677cf-27fd-5f51-872d-48ab9671250e",
+      "source": "767760fc-1f8c-58b4-b325-e3f7d90e8e43",
+      "target": "c76c9985-fa31-505b-9ec5-c92ca14dd4a2",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "93db6b66-c049-5d57-a774-d6cf295ee3d3",
+      "source": "c76c9985-fa31-505b-9ec5-c92ca14dd4a2",
+      "target": "fbc03c2a-11e8-5710-8729-a76d9490d472",
+      "sourceHandle": "output",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "f092ca8e-6bb7-575b-9e2e-bda77cd72799",
+      "source": "fbc03c2a-11e8-5710-8729-a76d9490d472",
+      "target": "db7e6fe2-a598-54e7-9204-866474d0ac01",
+      "sourceHandle": "output",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "264a302d-52a2-58c4-86ad-ae0e48833484",
+      "source": "db7e6fe2-a598-54e7-9204-866474d0ac01",
+      "target": "c18c1d3e-7c33-5f57-bb69-912cb3dbe3d9",
+      "sourceHandle": "output",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "b5f2d6e0-bf1a-546c-9292-c503cf53ab44",
+      "source": "c18c1d3e-7c33-5f57-bb69-912cb3dbe3d9",
+      "target": "e9a47483-b2de-5788-9317-ff7fe2e0f738",
+      "sourceHandle": "output"
+    }
+  ],
+  "createdAt": "1970-01-01T00:00:00.000Z",
+  "updatedAt": "1970-01-01T00:00:00.000Z"
+}

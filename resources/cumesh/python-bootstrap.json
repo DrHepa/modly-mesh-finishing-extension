@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "provider": "astral-sh/python-build-standalone",
+  "release_tag": "20261110",
+  "build_source_commit": "9244801782b78e4c4afc5c82a4524aa2101d3298",
+  "python_version": "3.12.16",
+  "archive": {
+    "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.12.16%2B20261110-aarch64-unknown-linux-gnu-install_only.tar.gz",
+    "filename": "cpython-3.12.16+20261110-aarch64-unknown-linux-gnu-install_only.tar.gz",
+    "sha256": "4792f81750282597fb2a3389fe18b945ed2ba6aad5e45ad406d122c58cb33081",
+    "size_bytes": 53264815,
+    "target_triple": "aarch64-unknown-linux-gnu"
+  },
+  "archive_prefix": "python/",
+  "interpreter": "python/bin/python3",
+  "licenses": {
+    "build_project": "MPL-2.0",
+    "bundled_software": "Python and bundled libraries retain their own included licenses; preserve and inventory actual archive license texts.",
+    "source_manifest": [
+      {
+        "component": "bzip2",
+        "license_file": "LICENSE.bzip2.txt",
+        "license_identifiers": [
+          "bzip2-1.0.6"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "1.0.8"
+      },
+      {
+        "component": "cpython-3.12",
+        "license_file": "LICENSE.cpython.txt",
+        "license_identifiers": [
+          "Python-2.0",
+          "CNRI-Python"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "3.12.16"
+      },
+      {
+        "component": "expat",
+        "license_file": "LICENSE.expat.txt",
+        "license_identifiers": [
+          "MIT"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "2.10.0"
+      },
+      {
+        "component": "libedit",
+        "license_file": "LICENSE.libedit.txt",
+        "license_identifiers": [
+          "BSD-3-Clause"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "20260512-3.1"
+      },
+      {
+        "component": "libffi",
+        "license_file": "LICENSE.libffi.txt",
+        "license_identifiers": [
+          "MIT"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "3.8.0"
+      },
+      {
+        "component": "mpdecimal",
+        "license_file": "LICENSE.mpdecimal.txt",
+        "license_identifiers": [
+          "BSD-2-Clause"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "4.0.0"
+      },
+      {
+        "component": "ncurses",
+        "license_file": "LICENSE.ncurses.txt",
+        "license_identifiers": [
+          "X11"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "6.5"
+      },
+      {
+        "component": "openssl-3.5",
+        "license_file": "LICENSE.openssl-3.txt",
+        "license_identifiers": [
+          "Apache-2.0"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "3.5.9"
+      },
+      {
+        "component": "sqlite",
+        "license_file": "LICENSE.sqlite.txt",
+        "license_identifiers": [],
+        "license_public_domain": true,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "3530100"
+      },
+      {
+        "component": "tcl",
+        "license_file": "LICENSE.tcl.txt",
+        "license_identifiers": [
+          "TCL"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "9.0.4"
+      },
+      {
+        "component": "tk",
+        "license_file": "LICENSE.tcl.txt",
+        "license_identifiers": [
+          "TCL"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "9.0.4"
+      },
+      {
+        "component": "xz",
+        "license_file": "LICENSE.liblzma.txt",
+        "license_identifiers": [
+          "0BSD"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "5.8.4"
+      },
+      {
+        "component": "zlib",
+        "license_file": "LICENSE.zlib.txt",
+        "license_identifiers": [
+          "Zlib"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "1.4"
+      },
+      {
+        "component": "zlib-ng",
+        "license_file": "LICENSE.zlib-ng.txt",
+        "license_identifiers": [
+          "Zlib"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "2.2.4"
+      },
+      {
+        "component": "zstd",
+        "license_file": "LICENSE.zstd.txt",
+        "license_identifiers": [
+          "BSD-3-Clause"
+        ],
+        "license_public_domain": null,
+        "scope": "pinned build-source manifest, not verified content inventory of selected archive",
+        "version": "1.5.7"
+      }
+    ]
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "id": "e1cc8325-1d04-4ec5-ab0a-7aea657cbc66",
+  "name": "Rebake onto Mesh (1K, Fixed UV)",
+  "description": "Rebake PBR from the original textured HIGH onto a UV-mapped LOW. Preserves LOW geometry and UVs; uses a 1024 px map preset with all other extension defaults.",
+  "nodes": [
+    {
+      "id": "5f75c9da-3950-4c55-b623-6efcccafb9a2",
+      "type": "meshNode",
+      "position": {
+        "x": 0,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "source": "file",
+          "filePath": "",
+          "fileName": ""
+        }
+      }
+    },
+    {
+      "id": "b685deb2-0463-472e-9c7c-deff2e049770",
+      "type": "extensionNode",
+      "position": {
+        "x": 440,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "high_poly_path": "",
+          "max_error_relative": 0.003,
+          "max_error_world": 0.01,
+          "resolution": 1024,
+          "base_resolution": 0,
+          "normal_resolution": 0,
+          "orm_resolution": 0,
+          "emission_resolution": 0,
+          "projection_distance_relative": 0.01,
+          "cage_extrusion_relative": 0.005,
+          "timeout_seconds": 14400
+        },
+        "extensionId": "mesh-finishing/rebake-onto-mesh"
+      }
+    },
+    {
+      "id": "1d8309b2-8994-428d-ac12-bc295907a25a",
+      "type": "outputNode",
+      "position": {
+        "x": 880,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {}
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "3d1a30b3-7cd2-44e6-96b9-08e902082cea",
+      "source": "5f75c9da-3950-4c55-b623-6efcccafb9a2",
+      "target": "b685deb2-0463-472e-9c7c-deff2e049770",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "33f86a97-1565-4521-a352-8e930e30f95c",
+      "source": "b685deb2-0463-472e-9c7c-deff2e049770",
+      "target": "1d8309b2-8994-428d-ac12-bc295907a25a",
+      "sourceHandle": "output"
+    }
+  ],
+  "createdAt": "1970-01-01T00:00:00.000Z",
+  "updatedAt": "1970-01-01T00:00:00.000Z"
+}

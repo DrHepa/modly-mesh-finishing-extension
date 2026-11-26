@@ -1,0 +1,463 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2,8 +2,8 @@
+ cmake_minimum_required(VERSION 3.24)
+ project(WTiVoNative VERSION 1.0.0 LANGUAGES CXX)
+ 
+-if(NOT WIN32)
+-  message(FATAL_ERROR "WTiVo v1.0 native build currently supports Windows x64 only")
++if(NOT WIN32 AND NOT (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$"))
++  message(FATAL_ERROR "This isolated WTiVo experiment supports Windows x64 or Linux ARM64 CPU modules only")
+ endif()
+ if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+   message(FATAL_ERROR "WTiVo requires a 64-bit compiler/toolchain")
+@@ -14,7 +14,10 @@
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ 
+ find_package(Python3 3.12 REQUIRED COMPONENTS Interpreter Development.Module)
+-find_package(pybind11 CONFIG REQUIRED)
++set(WTIVO_PYBIND11_INCLUDE "" CACHE PATH "Verified pybind11 3 header root")
++if(NOT EXISTS "${WTIVO_PYBIND11_INCLUDE}/pybind11/pybind11.h")
++  message(FATAL_ERROR "Verified pybind11 3 headers required")
++endif()
+ find_package(Eigen3 CONFIG REQUIRED)
+ find_package(CGAL CONFIG REQUIRED)
+ find_package(TBB CONFIG REQUIRED)
+@@ -36,7 +39,8 @@
+ set(WTIVO_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/build" CACHE PATH "WTiVo Python extension output directory")
+ file(MAKE_DIRECTORY "${WTIVO_OUTPUT_DIR}")
+ 
+-pybind11_add_module(wtivo_core MODULE native/core/wtivo_core.cpp)
++Python3_add_library(wtivo_core MODULE WITH_SOABI native/core/wtivo_core.cpp)
++target_include_directories(wtivo_core PRIVATE "${WTIVO_PYBIND11_INCLUDE}")
+ target_link_libraries(wtivo_core PRIVATE CGAL::CGAL TBB::tbb Eigen3::Eigen)
+ if(TARGET TBB::tbbmalloc)
+   target_link_libraries(wtivo_core PRIVATE TBB::tbbmalloc)
+@@ -44,7 +48,8 @@
+ target_compile_definitions(wtivo_core PRIVATE
+   NOMINMAX WIN32_LEAN_AND_MEAN CGAL_LINKED_WITH_TBB EIGEN_MPL2_ONLY)
+ 
+-pybind11_add_module(wtivo_vdb MODULE native/vdb/wtivo_vdb.cpp)
++Python3_add_library(wtivo_vdb MODULE WITH_SOABI native/vdb/wtivo_vdb.cpp)
++target_include_directories(wtivo_vdb PRIVATE "${WTIVO_PYBIND11_INCLUDE}")
+ target_link_libraries(wtivo_vdb PRIVATE OpenVDB::openvdb TBB::tbb)
+ target_compile_definitions(wtivo_vdb PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+ 
+--- a/wtivo.py
++++ b/wtivo.py
+@@ -105,6 +105,7 @@
+     )
+     p.add_argument("--input", required=True)
+     p.add_argument("--output", required=True)
++    p.add_argument("--proxy-points", type=int, default=PROXY_POINTS, help="Maximum proxy points, 4..12000000; upstream default 12000000.")
+     p.add_argument(
+         "--input-res", "--graph-res", dest="input_res", type=int, default=1536,
+         help="WTiVo thick/input UDF + graph-label resolution. Default 1536. No artificial upper limit.",
+@@ -674,7 +675,11 @@
+     return np.ascontiguousarray(full_labels, dtype=np.uint8)
+ 
+ def main():
++    global PROXY_POINTS
+     a = parse_args()
++    if not 4 <= a.proxy_points <= 12_000_000:
++        raise ValueError("--proxy-points must be between 4 and 12000000 (3D tetrahedralization requires at least four noncoplanar points)")
++    PROXY_POINTS = int(a.proxy_points)
+     if not (1 <= int(a.gpupr_local_steps) <= 32):
+         raise ValueError("--gpupr_local_steps must be between 1 and 32")
+     configure_resolutions(a.input_res, a.final_res)
+@@ -692,8 +697,8 @@
+         raise ValueError("--lambda_fill must be >=0")
+     if a.threads < 1:
+         raise ValueError("--threads must be >=1")
+-    if os.name != "nt":
+-        raise SystemExit("WTiVo 1.0 currently supports Windows 10/11 x64 only.")
++    if os.name != "nt" and not (sys.platform.startswith("linux") and os.uname().machine in ("aarch64", "arm64")):
++        raise SystemExit("This isolated WTiVo port supports Windows or Linux ARM64 only.")
+     if not torch.cuda.is_available():
+         raise SystemExit("WTiVo requires an NVIDIA CUDA-capable GPU. Run Setup-Windows.cmd first.")
+ 
+@@ -710,7 +715,7 @@
+     print(f"Output         : {out}")
+     print(f"Input/graph R  : {R} sparse global OpenVDB UDF")
+     print(f"Final FaithC R : {FINAL_R} signed sparse OpenVDB")
+-    print(f"Proxy budget   : {PROXY_POINTS:,} points [FIXED]")
++    print(f"Proxy requested: {PROXY_POINTS:,} points maximum")
+     print(f"Feature weight : {a.proxy_feature_weight:g}")
+     print(f"Lambda fill    : {a.lambda_fill}")
+     print(f"CPU threads    : {a.threads}")
+@@ -737,12 +742,12 @@
+     print("[WTiVo] thick UDF freed immediately after labels")
+     print("[WTiVo] Windows EmptyWorkingSet disabled; CRT heap compaction retained")
+     print("[WTiVo] final watertight validation always ON exactly once")
+-    print("[FIXED-12M] Exactly 12,000,000 points are sent to CGAL")
+-    print("[NO-RATIO] --decimate_ratio and --proxy_points are intentionally unavailable in this production build")
++    print(f"[POINT-BUDGET] Requested maximum {PROXY_POINTS:,}; actual count reported by native sampler")
++    print("[POINT-BUDGET] Explicit --proxy-points is an isolated resource-bound CLI extension; no decimator")
+     print("[LABEL-FIX] geometry EPS=1/R; tet centroid OpenVDB query padding remains 0")
+     print(f"[RES-CONTROL] --input-res={R} controls thick field + cell-label geometry")
+     print(f"[RES-CONTROL] --final-res={FINAL_R} controls ONLY final signed OpenVDB + FaithC density")
+-    print("[FIXED-12M] CGAL proxy stays exactly 12,000,000 points regardless of resolution")
++    print(f"[POINT-BUDGET] CGAL receives at most {PROXY_POINTS:,} points regardless of resolution")
+     print("[NO FINAL DECIMATOR] polygon count is the direct FaithC contour at --final-res")
+     print("[NO RES CAP] --input-res and --final-res have NO artificial upper limit")
+     print("[WARNING] practical limit is only RAM/VRAM/runtime; very high final-res can create enormous meshes")
+--- a/scripts/build_gpupr.py
++++ b/scripts/build_gpupr.py
+@@ -5,17 +5,18 @@
+ import os
+ import shutil
+ import sys
++import platform
+ from pathlib import Path
+ 
+-if os.name != "nt":
+-    raise SystemExit("WTiVo GPUPr build currently supports Windows only.")
++if os.name != "nt" and not (sys.platform.startswith("linux") and platform.machine() in ("aarch64", "arm64")):
++    raise SystemExit("This isolated GPUPr build supports Windows or Linux ARM64 only.")
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ BUILD_DIR = ROOT / ".build" / "gpupr"
+ OUT_DIR = ROOT / "build"
+ BUILD_DIR.mkdir(parents=True, exist_ok=True)
+ OUT_DIR.mkdir(parents=True, exist_ok=True)
+-os.environ.setdefault("MAX_JOBS", str(min(6, os.cpu_count() or 1)))
++os.environ.setdefault("MAX_JOBS", str(min(3, os.cpu_count() or 1)))
+ 
+ import torch
+ from torch.utils.cpp_extension import load
+@@ -40,12 +41,12 @@
+     default = Path(r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8")
+     if default.exists():
+         cuda_home = str(default)
+-if not cuda_home or not (Path(cuda_home) / "bin" / "nvcc.exe").exists():
++if not cuda_home or not (Path(cuda_home) / "bin" / ("nvcc.exe" if os.name == "nt" else "nvcc")).exists():
+     raise RuntimeError("CUDA Toolkit with nvcc was not found. Install CUDA Toolkit 12.8 or set WTIVO_CUDA_HOME.")
+ os.environ["CUDA_HOME"] = cuda_home
+ os.environ["CUDA_PATH"] = cuda_home
+ 
+-extra_cuda = ["-O3", "--std=c++17"]
++extra_cuda = ["-O3", "--std=c++17", "--threads=1"]
+ if os.environ.get("WTIVO_ALLOW_UNSUPPORTED_MSVC", "0") == "1":
+     extra_cuda.append("-allow-unsupported-compiler")
+ 
+@@ -65,14 +66,14 @@
+         str(ROOT / "native" / "gpupr" / "gpu_push_relabel_fast.cu"),
+     ],
+     build_directory=str(BUILD_DIR),
+-    extra_cflags=["/O2", "/std:c++17", "/fp:precise"],
++    extra_cflags=(["/O2", "/std:c++17", "/fp:precise"] if os.name == "nt" else ["-O3", "-std=c++17"]),
+     extra_cuda_cflags=extra_cuda,
+     with_cuda=True,
+     verbose=True,
+ )
+ 
+ built = Path(mod.__file__).resolve()
+-dst = OUT_DIR / "wtivo_gpupr.pyd"
++dst = OUT_DIR / ("wtivo_gpupr.pyd" if os.name == "nt" else built.name)
+ shutil.copy2(built, dst)
+ print("[SUCCESS] built:", dst)
+ 
+--- a/native/core/wtivo_core.cpp
++++ b/native/core/wtivo_core.cpp
+@@ -86,7 +86,7 @@
+     const int n = static_cast<int>(vertices.rows());
+     if (n <= 0) {
+         MatrixXi z(0, 4);
+-        return py::make_tuple(vertices, z, z);
++        return py::make_tuple(MatrixXd(vertices), z, z);
+     }
+ 
+     const int threads = wtivo_threads(requested_threads);
+@@ -161,7 +161,8 @@
+ 
+     // Returning vertices keeps the same public shape as the proven runtime and
+     // lets Python reuse the exact vertex array for label sampling and graph math.
+-    return py::make_tuple(vertices, std::move(tets), std::move(nbrs));
++    // Own the data: a C-order input can back this Ref with a temporary loader copy.
++    return py::make_tuple(MatrixXd(vertices), std::move(tets), std::move(nbrs));
+ }
+ 
+ // -----------------------------------------------------------------------------
+--- a/native/vdb/wtivo_vdb.cpp
++++ b/native/vdb/wtivo_vdb.cpp
+@@ -220,7 +220,8 @@
+     bool clamp_anchor,
+     double lambda_n,
+     double lambda_d,
+-    FCTToken& out)
++    FCTToken& out,
++    std::uint16_t accepted_edge_mask = 0x0FFFu)
+ {
+     double phi[8];
+     bool inside[8];
+@@ -245,6 +246,7 @@
+ 
+     for (int e = 0; e < 12; ++e) {
+         const int a = EDGE_CORNERS[e][0], b = EDGE_CORNERS[e][1];
++        if ((accepted_edge_mask & static_cast<std::uint16_t>(1u << e)) == 0) continue;
+         if (inside[a] == inside[b]) continue;
+         const double denom = phi[a] - phi[b];
+         double t = (std::abs(denom) > 1.0e-30) ? (phi[a] / denom) : 0.5;
+@@ -474,12 +476,19 @@
+     }
+ 
+     if (component_count <= 0) return 0;
++    if (component_count == 1) {
++        out_tokens[0] = base;
++        return 1;
++    }
+ 
+     for (int ci = 0; ci < component_count; ++ci) {
+-        FCTToken tok = base;
+-
+-        // IMPORTANT: do not change FaithC geometry here. Each split topology
+-        // vertex remains at the exact same QEF anchor/normal as v6.16.
++        FCTToken tok;
++        // Distinct sheets use only their own Hermite crossings for QEF/normal.
++        if (component_masks[ci] == 0 || !make_fct_token(
++                grid, acc, c, isovalue, clamp_anchor, lambda_n, lambda_d,
++                tok, component_masks[ci])) {
++            throw std::runtime_error("FaithC sheet has no accepted crossing edges");
++        }
+         tok.edge_mask = component_masks[ci];
+         tok.component_count = static_cast<std::uint8_t>(component_count);
+ 
+--- a/native/vdb/wtivo_vdb.cpp
++++ b/native/vdb/wtivo_vdb.cpp
+@@ -601,6 +601,218 @@
+         p = q;
+     }
+     return bad;
++}
++
++// A checkerboard face can have two distinct contour arcs between the SAME
++// pair of connected cell sheets. Preserve those arcs geometrically instead
++// of cloning their coincident QEF endpoints in the legacy fan finalizer.
++static std::size_t split_checkerboard_face_arcs(
++    const openvdb::FloatGrid& grid, double isovalue,
++    std::vector<FCTToken>& tokens, std::vector<Tri3i>& faces, int threads)
++{
++    std::size_t d1 = 0, high = 0;
++    std::uint32_t maximum = 0;
++    const auto bad = bad_edges_v621(faces, threads, d1, high, maximum);
++    std::unordered_map<std::uint64_t, std::vector<std::size_t>> incident;
++    for (const auto& e : bad) if (e.degree == 4) incident.emplace(e.key, std::vector<std::size_t>());
++    if (incident.empty() || faces.size() % 2 != 0) return 0;
++    for (std::size_t fi = 0; fi < faces.size(); ++fi) {
++        const auto& f = faces[fi];
++        const std::int32_t v[3] = {f.a, f.b, f.c};
++        for (int k = 0; k < 3; ++k) {
++            auto it = incident.find(edge_key_v621(v[k], v[(k+1)%3]));
++            if (it != incident.end()) it->second.push_back(fi);
++        }
++    }
++    // Metadata is recovered only for rare bad-edge incidents. Original quad
++    // pairs remain consecutive after complete even-length TLS concatenation.
++    auto quad_edge = [&](std::size_t fi, std::uint64_t boundary,
++                         openvdb::Coord& origin, int& axis) {
++        const auto& a = faces[fi & ~std::size_t(1)];
++        const auto& b = faces[(fi & ~std::size_t(1)) + 1];
++        const std::int32_t v[6] = {a.a,a.b,a.c,b.a,b.b,b.c};
++        std::vector<std::int32_t> ids(v, v+6);
++        std::sort(ids.begin(), ids.end());
++        ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
++        if (ids.size() != 4 || ids.front() < 0 || static_cast<std::size_t>(ids.back()) >= tokens.size()) return false;
++        struct Side { std::int32_t a, b; };
++        std::vector<Side> sides;
++        int reversed = 0;
++        for (int t = 0; t < 2; ++t) {
++            if (v[3*t] == v[3*t+1] || v[3*t+1] == v[3*t+2] || v[3*t+2] == v[3*t]) return false;
++            for (int k = 0; k < 3; ++k) {
++                const Side s{v[3*t+k],v[3*t+(k+1)%3]};
++                auto it = std::find_if(sides.begin(), sides.end(), [&](const Side& x) { return x.a==s.b && x.b==s.a; });
++                if (it != sides.end()) { sides.erase(it); ++reversed; }
++                else sides.push_back(s);
++            }
++        }
++        if (reversed != 1 || sides.size() != 4) return false;
++        const std::int32_t first = sides[0].a;
++        std::int32_t current = first;
++        bool on_boundary = false;
++        for (int k = 0; k < 4; ++k) {
++            auto it = std::find_if(sides.begin(), sides.end(), [&](const Side& x) { return x.a == current; });
++            if (it == sides.end()) return false;
++            const auto ca=tokens[it->a].coord, cb=tokens[it->b].coord;
++            if (std::abs(ca.x()-cb.x())+std::abs(ca.y()-cb.y())+std::abs(ca.z()-cb.z()) != 1) return false;
++            if (edge_key_v621(it->a,it->b) == boundary) on_boundary = true;
++            current = it->b;
++            sides.erase(it);
++        }
++        if (current != first || !on_boundary) return false;
++        openvdb::Coord lo = tokens[ids[0]].coord, hi = lo;
++        for (auto id : ids) for (int k = 0; k < 3; ++k) {
++            lo[k] = std::min(lo[k], tokens[id].coord[k]);
++            hi[k] = std::max(hi[k], tokens[id].coord[k]);
++        }
++        axis = -1;
++        for (int k = 0; k < 3; ++k) {
++            if (hi[k] == lo[k]) { if (axis != -1) return false; axis = k; }
++            else if (hi[k] - lo[k] != 1) return false;
++        }
++        if (axis < 0) return false;
++        origin = hi;
++        int corners = 0;
++        for (auto id : ids) {
++            const auto c = tokens[id].coord;
++            int bit = 0, shift = 0;
++            for (int k = 0; k < 3; ++k) if (k != axis) bit |= (c[k]-lo[k]) << shift++;
++            if (corners & (1 << bit)) return false;
++            corners |= 1 << bit;
++            bool owns_crossing = false;
++            for (int e = 0; e < 12; ++e) if (EDGE_AXIS[e] == axis) {
++                const int q = EDGE_CORNERS[e][0];
++                const openvdb::Coord start(c.x()+CORNER_OFF[q][0], c.y()+CORNER_OFF[q][1], c.z()+CORNER_OFF[q][2]);
++                if (start == origin && (tokens[id].edge_mask & (1u << e))) owns_crossing = true;
++            }
++            if (!owns_crossing) return false;
++        }
++        return corners == 15;
++    };
++    struct Split { std::uint64_t edge; std::int32_t midpoint; };
++    std::unordered_map<std::size_t, std::vector<Split>> splits;
++    std::vector<FCTToken> added;
++    std::size_t repaired = 0;
++    auto acc = grid.getConstAccessor();
++    for (const auto& edge : bad) {
++        if (edge.degree != 4) continue;
++        const auto u = edge_lo_v621(edge.key), v = edge_hi_v621(edge.key);
++        if (u < 0 || v < 0 || static_cast<std::size_t>(v) >= tokens.size()) continue;
++        openvdb::Coord lower = tokens[u].coord, upper = tokens[v].coord;
++        int normal = -1;
++        for (int k = 0; k < 3; ++k) if (lower[k] != upper[k]) {
++            if (normal != -1 || std::abs(lower[k]-upper[k]) != 1) { normal = -2; break; }
++            normal = k;
++        }
++        if (normal < 0) continue;
++        if (lower[normal] > upper[normal]) std::swap(lower,upper);
++        const int fi = normal == 0 ? 5 : (normal == 1 ? 3 : 1);
++        double phi[4];
++        openvdb::Coord corners[4];
++        for (int k = 0; k < 4; ++k) {
++            const int q = FACE_CORNERS[fi][k];
++            corners[k] = openvdb::Coord(lower.x()+CORNER_OFF[q][0], lower.y()+CORNER_OFF[q][1], lower.z()+CORNER_OFF[q][2]);
++            phi[k] = static_cast<double>(acc.getValue(corners[k])) - isovalue;
++        }
++        bool valid = true;
++        openvdb::Vec3d crossings[4];
++        for (int k = 0; k < 4; ++k) {
++            const int j = (k+1)%4;
++            if (!std::isfinite(phi[k]) || (phi[k] <= 0.0) == (phi[j] <= 0.0)) { valid = false; break; }
++            // Match make_fct_token's positive-axis Hermite interpolation,
++            // including its zero-denominator rule and local-coordinate order.
++            const int e=FACE_EDGES[fi][k], ca=EDGE_CORNERS[e][0], cb=EDGE_CORNERS[e][1];
++            const openvdb::Coord pa(lower.x()+CORNER_OFF[ca][0],lower.y()+CORNER_OFF[ca][1],lower.z()+CORNER_OFF[ca][2]);
++            const openvdb::Coord pb(lower.x()+CORNER_OFF[cb][0],lower.y()+CORNER_OFF[cb][1],lower.z()+CORNER_OFF[cb][2]);
++            const double fa=static_cast<double>(acc.getValue(pa))-isovalue;
++            const double fb=static_cast<double>(acc.getValue(pb))-isovalue;
++            const double denom=fa-fb;
++            const double t=std::min(1.0,std::max(0.0,std::abs(denom)>1.0e-30 ? fa/denom : 0.5));
++            double uvw[3]={double(CORNER_OFF[ca][0]),double(CORNER_OFF[ca][1]),double(CORNER_OFF[ca][2])};
++            uvw[EDGE_AXIS[e]]+=t;
++            crossings[k]=grid.transform().indexToWorld(openvdb::Vec3d(lower.x()+uvw[0],lower.y()+uvw[1],lower.z()+uvw[2]));
++        }
++        if (!valid) continue;
++        const auto& hits = incident.at(edge.key);
++        if (hits.size() != 4) continue;
++        std::array<std::size_t,4> face_by_slot{};
++        int orientation[4] = {}, occupied = 0;
++        std::unordered_set<std::size_t> quads;
++        for (auto hit : hits) {
++            openvdb::Coord start; int axis = -1;
++            if (!quad_edge(hit, edge.key, start, axis) || !quads.insert(hit/2).second) { valid=false; break; }
++            int slot = -1;
++            for (int k = 0; k < 4; ++k) {
++                const int e = FACE_EDGES[fi][k], q = EDGE_CORNERS[e][0];
++                const openvdb::Coord expected(lower.x()+CORNER_OFF[q][0],lower.y()+CORNER_OFF[q][1],lower.z()+CORNER_OFF[q][2]);
++                if (start == expected && axis == EDGE_AXIS[e]) slot=k;
++            }
++            if (slot < 0 || (occupied & (1<<slot))) { valid=false; break; }
++            occupied |= 1<<slot; face_by_slot[slot]=hit;
++            const auto& f = faces[hit]; const std::int32_t ids[3]={f.a,f.b,f.c};
++            for (int k=0;k<3;++k) if (edge_key_v621(ids[k],ids[(k+1)%3])==edge.key)
++                orientation[slot] = ids[k]==u ? 1 : -1;
++        }
++        if (!valid || occupied != 15) continue;
++        const double center_phi=0.25*(phi[0]+phi[1]+phi[2]+phi[3]);
++        const int offset = ((center_phi <= 0.0) == (phi[0] <= 0.0)) ? 0 : 1;
++        FCTToken arc[2];
++        for (int a=0;a<2;++a) {
++            const int i=(offset+2*a)%4, j=(i+1)%4;
++            if (orientation[i]==0 || orientation[i]!=-orientation[j]) { valid=false; break; }
++            const auto p=(crossings[i]+crossings[j])*0.5;
++            arc[a]=tokens[u];
++            arc[a].anchor=openvdb::Vec3f(static_cast<float>(p.x()),static_cast<float>(p.y()),static_cast<float>(p.z()));
++            arc[a].edge_mask=0; arc[a].flux_x=arc[a].flux_y=arc[a].flux_z=0;
++            for (int k=0;k<3;++k) if (!std::isfinite(arc[a].anchor[k])) valid=false;
++            for (const auto& t : tokens) if (t.anchor==arc[a].anchor) valid=false;
++            for (const auto& t : added) if (t.anchor==arc[a].anchor) valid=false;
++        }
++        if (!valid || arc[0].anchor==arc[1].anchor) continue;
++        if (tokens.size()+added.size()+2 >= static_cast<std::size_t>(std::numeric_limits<std::int32_t>::max()))
++            throw std::runtime_error("FaithC face arcs: too many vertices");
++        for (int a=0;a<2;++a) {
++            const auto mid=static_cast<std::int32_t>(tokens.size()+added.size());
++            added.push_back(arc[a]);
++            for (int k=0;k<2;++k) splits[face_by_slot[(offset+2*a+k)%4]].push_back(Split{edge.key,mid});
++        }
++        ++repaired;
++    }
++    if (added.empty()) return 0;
++    // A triangle may border more than one ambiguous face. Split each ORIGINAL
++    // edge sequentially so no earlier subdivision is lost or overwritten.
++    std::vector<Tri3i> output; output.reserve(faces.size()+4*repaired);
++    auto position = [&](std::int32_t id) -> openvdb::Vec3d {
++        const auto p = static_cast<std::size_t>(id)<tokens.size() ? tokens[id].anchor : added[id-tokens.size()].anchor;
++        return openvdb::Vec3d(p.x(),p.y(),p.z());
++    };
++    for (std::size_t fi=0;fi<faces.size();++fi) {
++        auto it=splits.find(fi);
++        if (it==splits.end()) { output.push_back(faces[fi]); continue; }
++        std::vector<Tri3i> local{faces[fi]};
++        for (const auto& split : it->second) {
++            bool found=false;
++            for (std::size_t ti=0;ti<local.size();++ti) {
++                const auto f=local[ti]; const std::int32_t v[3]={f.a,f.b,f.c};
++                for (int k=0;k<3;++k) if (edge_key_v621(v[k],v[(k+1)%3])==split.edge) {
++                    local[ti]=Tri3i{v[k],split.midpoint,v[(k+2)%3]};
++                    local.push_back(Tri3i{split.midpoint,v[(k+1)%3],v[(k+2)%3]});
++                    found=true; break;
++                }
++                if (found) break;
++            }
++            if (!found) throw std::runtime_error("FaithC face arcs: missing original boundary");
++        }
++        for (const auto& f : local) {
++            const auto a=position(f.a), b=position(f.b), c=position(f.c);
++            if (!(len3((b-a).cross(c-a))>0.0))
++                throw std::runtime_error("FaithC face arcs: degenerate subdivision");
++            output.push_back(f);
++        }
++    }
++    tokens.insert(tokens.end(),added.begin(),added.end()); faces.swap(output);
++    return repaired;
+ }
+ 
+ static inline bool bad_key_contains_v621(
+@@ -1327,6 +1539,9 @@
+         }
+         quad_count = faces.size() / 2;
+ 
++        const std::size_t face_arc_splits =
++            split_checkerboard_face_arcs(*grid_, isovalue, tokens, faces, threads);
++
+         // v6.21: exact-local topology finalization.
+         // High-degree edges are repaired by coordinate-identical vertex fan
+         // splitting. Tiny degree-1 closed loops may receive a voxel-scale cap.
+@@ -1366,6 +1581,7 @@
+         st["used_vertices"] = py::int_(used_count);
+         st["manifold_split_cells"] = py::int_(manifold_split_cells);
+         st["manifold_extra_vertices"] = py::int_(manifold_extra_vertices);
++        st["face_arc_splits"] = py::int_(face_arc_splits);
+         st["repair_bad_before"] = py::int_(finalize_stats.bad_before);
+         st["repair_degree1_before"] = py::int_(finalize_stats.degree1_before);
+         st["repair_degree_gt2_before"] = py::int_(finalize_stats.degree_gt2_before);

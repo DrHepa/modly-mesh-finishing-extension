@@ -1,0 +1,78 @@
+{
+  "id": "9a1a05f4-6ebc-5f70-b982-04200c90d690",
+  "name": "Mesh Finishing - Optimize and Rebake",
+  "description": "Choose an original textured GLB in Load 3D Mesh before Run. Optimize and Rebake uses the manifest defaults and the Blender backend. Strict geometry, UV, correspondence and material checks may reject unsupported input; importing this template is not a qualification of your asset.",
+  "nodes": [
+    {
+      "id": "529d81a0-c828-57f3-8f42-65469849e9aa",
+      "type": "meshNode",
+      "position": {
+        "x": 0,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "source": "file",
+          "filePath": "",
+          "fileName": ""
+        }
+      }
+    },
+    {
+      "id": "71e8ccc4-3510-55f8-928c-a85f69a74e35",
+      "type": "extensionNode",
+      "position": {
+        "x": 440,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "simplification_backend": "blender",
+          "triangle_budget": 80000,
+          "max_error_relative": 0.003,
+          "max_error_world": 0.01,
+          "resolution": 2048,
+          "base_resolution": 0,
+          "normal_resolution": 0,
+          "orm_resolution": 0,
+          "emission_resolution": 0,
+          "projection_distance_relative": 0.01,
+          "cage_extrusion_relative": 0.005,
+          "protected_component_triangles": 64,
+          "timeout_seconds": 14400
+        },
+        "extensionId": "mesh-finishing/optimize-rebake"
+      }
+    },
+    {
+      "id": "62481f9e-073f-5008-a4a2-64d84c447d43",
+      "type": "outputNode",
+      "position": {
+        "x": 880,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {}
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "af0da38a-abac-5538-a938-9ae80bec0a0e",
+      "source": "529d81a0-c828-57f3-8f42-65469849e9aa",
+      "target": "71e8ccc4-3510-55f8-928c-a85f69a74e35",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "b71a5092-3c42-514c-a712-5c7367e7e0ad",
+      "source": "71e8ccc4-3510-55f8-928c-a85f69a74e35",
+      "target": "62481f9e-073f-5008-a4a2-64d84c447d43",
+      "sourceHandle": "output"
+    }
+  ],
+  "createdAt": "1970-01-01T00:00:00.000Z",
+  "updatedAt": "1970-01-01T00:00:00.000Z"
+}

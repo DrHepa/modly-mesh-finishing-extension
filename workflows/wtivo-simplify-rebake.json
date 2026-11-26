@@ -1,0 +1,156 @@
+{
+  "id": "7c94bb88-49e2-54c7-a8fc-60a2019d5f5e",
+  "name": "Mesh Finishing - WTiVo, Simplify and Rebake",
+  "description": "Local small-hole repair at R64 preserves eligible original surfaces and keeps all source components (drop 0). Before Run, choose the input GLB in Load 3D Mesh and a paired intact original textured HIGH in UV / Repack + Rebake. Inspect measures the repaired geometry; Simplify is a byte-preserving no-op below the 80,000-triangle ceiling. The moderate rebake uses 512 px with unchanged strict geometry and projection limits. New faces have no authored appearance: without a valid matching HIGH counterpart the job may refuse. Full Volume remains a separate explicit option on the reconstruction node. Requires the separately configured optional WTiVo runtime; this preset is not universal hole closure or texture equivalence.",
+  "nodes": [
+    {
+      "id": "716b4f94-4397-5d60-b71f-4321366bd0f1",
+      "type": "meshNode",
+      "position": {
+        "x": 0,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "source": "file",
+          "filePath": "",
+          "fileName": ""
+        }
+      }
+    },
+    {
+      "id": "a0b865be-9523-5677-bff9-118124baceea",
+      "type": "extensionNode",
+      "position": {
+        "x": 440,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "drop_below_largest_area_percent": 0.0,
+          "input_resolution": 64,
+          "final_resolution": 64,
+          "proxy_points": 16384,
+          "max_rounds": 4096,
+          "memory_budget_mib": 8192,
+          "max_output_triangles": 1000000,
+          "timeout_seconds": 1800,
+          "repair_mode": "local_holes"
+        },
+        "extensionId": "mesh-finishing/reconstruct-wtivo"
+      }
+    },
+    {
+      "id": "4eb4a367-ede1-593c-8aa6-be02ad173056",
+      "type": "extensionNode",
+      "position": {
+        "x": 880,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "analysis_mode": "geometry",
+          "timeout_seconds": 600
+        },
+        "extensionId": "mesh-finishing/inspect-mesh"
+      }
+    },
+    {
+      "id": "f7424d74-af65-5047-bb3e-c4e9c78a7067",
+      "type": "extensionNode",
+      "position": {
+        "x": 1320,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "simplification_backend": "blender",
+          "triangle_budget": 80000,
+          "max_error_relative": 0.003,
+          "max_error_world": 0.01,
+          "protected_component_triangles": 64,
+          "timeout_seconds": 14400
+        },
+        "extensionId": "mesh-finishing/simplify-mesh"
+      }
+    },
+    {
+      "id": "1827b46c-4ea8-5c93-bce3-88eacbee8d99",
+      "type": "extensionNode",
+      "position": {
+        "x": 1760,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "high_poly_path": "",
+          "max_error_relative": 0.003,
+          "max_error_world": 0.01,
+          "resolution": 512,
+          "base_resolution": 0,
+          "normal_resolution": 0,
+          "orm_resolution": 0,
+          "emission_resolution": 0,
+          "projection_distance_relative": 0.01,
+          "cage_extrusion_relative": 0.005,
+          "timeout_seconds": 14400
+        },
+        "extensionId": "mesh-finishing/uv-repack-rebake"
+      }
+    },
+    {
+      "id": "7ed249dd-8c34-524e-98f2-b7cdbe0fe0f0",
+      "type": "outputNode",
+      "position": {
+        "x": 2200,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {}
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "bc468ed0-982b-5053-96ed-0d48f6af90ee",
+      "source": "716b4f94-4397-5d60-b71f-4321366bd0f1",
+      "target": "a0b865be-9523-5677-bff9-118124baceea",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "c5f24f80-20b6-5102-bd34-d14ff3670eb0",
+      "source": "a0b865be-9523-5677-bff9-118124baceea",
+      "target": "4eb4a367-ede1-593c-8aa6-be02ad173056",
+      "sourceHandle": "output",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "6aabd3bc-e4eb-5f33-a911-154826da904b",
+      "source": "4eb4a367-ede1-593c-8aa6-be02ad173056",
+      "target": "f7424d74-af65-5047-bb3e-c4e9c78a7067",
+      "sourceHandle": "output",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "bc235252-5043-538c-8eb2-8554fef9ec1d",
+      "source": "f7424d74-af65-5047-bb3e-c4e9c78a7067",
+      "target": "1827b46c-4ea8-5c93-bce3-88eacbee8d99",
+      "sourceHandle": "output",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "7a5561f8-e0bc-557d-b06c-b098cc174979",
+      "source": "1827b46c-4ea8-5c93-bce3-88eacbee8d99",
+      "target": "7ed249dd-8c34-524e-98f2-b7cdbe0fe0f0",
+      "sourceHandle": "output"
+    }
+  ],
+  "createdAt": "1970-01-01T00:00:00.000Z",
+  "updatedAt": "1970-01-01T00:00:00.000Z"
+}

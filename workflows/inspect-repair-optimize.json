@@ -1,0 +1,121 @@
+{
+  "id": "a0c4e827-a19d-5664-a504-078cbd1f8d1a",
+  "name": "Mesh Finishing - Inspect, Repair and Optimize",
+  "description": "Choose an original textured GLB in Load 3D Mesh before Run. Inspect Mesh preserves the input, Conservative Repair removes only exact zero-area triangles, and Optimize & Rebake uses production defaults with Blender. Strict geometry, UV, correspondence and material checks may reject unsupported assets; importing this template is not an asset qualification.",
+  "nodes": [
+    {
+      "id": "fb8e159c-a031-5703-9108-d8410ad16519",
+      "type": "meshNode",
+      "position": {
+        "x": 0,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "source": "file",
+          "filePath": "",
+          "fileName": ""
+        }
+      }
+    },
+    {
+      "id": "c6758b3e-917d-5424-8936-39f14b3a8788",
+      "type": "extensionNode",
+      "position": {
+        "x": 440,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "analysis_mode": "structural",
+          "timeout_seconds": 600
+        },
+        "extensionId": "mesh-finishing/inspect-mesh"
+      }
+    },
+    {
+      "id": "9be7d058-64a5-5e25-96f6-660bc14c6efe",
+      "type": "extensionNode",
+      "position": {
+        "x": 880,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {},
+        "extensionId": "mesh-finishing/conservative-repair"
+      }
+    },
+    {
+      "id": "73da2e89-fd15-5b69-b0e3-bbc7ac1d2f17",
+      "type": "extensionNode",
+      "position": {
+        "x": 1320,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {
+          "simplification_backend": "blender",
+          "triangle_budget": 80000,
+          "max_error_relative": 0.003,
+          "max_error_world": 0.01,
+          "resolution": 2048,
+          "base_resolution": 0,
+          "normal_resolution": 0,
+          "orm_resolution": 0,
+          "emission_resolution": 0,
+          "projection_distance_relative": 0.01,
+          "cage_extrusion_relative": 0.005,
+          "protected_component_triangles": 64,
+          "timeout_seconds": 14400
+        },
+        "extensionId": "mesh-finishing/optimize-rebake"
+      }
+    },
+    {
+      "id": "0f57b380-fc1b-5a5b-b096-3af263a0fd87",
+      "type": "outputNode",
+      "position": {
+        "x": 1840,
+        "y": 80
+      },
+      "data": {
+        "enabled": true,
+        "params": {}
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "a741327d-aa14-5853-84f5-a719b2ce6048",
+      "source": "fb8e159c-a031-5703-9108-d8410ad16519",
+      "target": "c6758b3e-917d-5424-8936-39f14b3a8788",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "4475c575-9d21-5584-ba79-d7d962bd388e",
+      "source": "c6758b3e-917d-5424-8936-39f14b3a8788",
+      "target": "9be7d058-64a5-5e25-96f6-660bc14c6efe",
+      "sourceHandle": "output",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "10bab829-3d03-5c57-83e4-e5042ab842ed",
+      "source": "9be7d058-64a5-5e25-96f6-660bc14c6efe",
+      "target": "73da2e89-fd15-5b69-b0e3-bbc7ac1d2f17",
+      "sourceHandle": "output",
+      "targetHandle": "input-0"
+    },
+    {
+      "id": "474186d2-e67e-5ddd-8acc-f752a38f5942",
+      "source": "73da2e89-fd15-5b69-b0e3-bbc7ac1d2f17",
+      "target": "0f57b380-fc1b-5a5b-b096-3af263a0fd87",
+      "sourceHandle": "output"
+    }
+  ],
+  "createdAt": "1970-01-01T00:00:00.000Z",
+  "updatedAt": "1970-01-01T00:00:00.000Z"
+}

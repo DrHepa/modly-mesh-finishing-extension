@@ -1,0 +1,223 @@
+diff --git a/bindings.cpp b/bindings.cpp
+--- a/bindings.cpp
++++ b/bindings.cpp
+@@ -2,9 +2,11 @@
+ #include <torch/extension.h>
+ #include "src/hash/api.h"
+ #include "src/remesh/api.h"
++std::tuple<torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor> contour_dual_contour(const torch::Tensor&,const torch::Tensor&,const torch::Tensor&,const torch::Tensor&,int,int,int);
+ PYBIND11_MODULE(TORCH_EXTENSION_NAME,m) {
+  m.def("hashmap_insert_3d_idx_as_val_cuda", &cumesh::hashmap_insert_3d_idx_as_val_cuda);
+  m.def("hashmap_lookup_3d_cuda", &cumesh::hashmap_lookup_3d_cuda);
+  m.def("get_sparse_voxel_grid_active_vertices", &cumesh::get_sparse_voxel_grid_active_vertices);
+  m.def("simple_dual_contour", &cumesh::simple_dual_contour);
++ m.def("contour_dual_contour", &contour_dual_contour);
+ }
+diff --git a/dc_wrapper.py b/dc_wrapper.py
+--- a/dc_wrapper.py
++++ b/dc_wrapper.py
+@@ -1,6 +1,7 @@
+ # CuMesh MIT, Jianfeng XIANG 2025, pinned d10e54; explicit-adapter-only isolated proof.
+ import torch
+ from tqdm import tqdm
++_TRACE = {}
+ def _init_hashmap(resolution, capacity, device):
+     VOL = resolution * resolution * resolution
+     if VOL < 2 ** 32:
+@@ -72,7 +73,10 @@
+     dist_vert = chunked_udf(bvh, pts_vert)
+     hashmap_vert = _init_hashmap(resolution + 1, 2 * grid_verts.shape[0], device)
+     _C.hashmap_insert_3d_idx_as_val_cuda(*hashmap_vert, torch.cat([torch.zeros_like(grid_verts[:, :1]), grid_verts], dim=1), resolution + 1, resolution + 1, resolution + 1)
+-    dual_verts, intersected = _C.simple_dual_contour(*hashmap_vert, coords, dist_vert - eps, resolution + 1, resolution + 1, resolution + 1)
++    scalar = dist_vert - eps
++    dual_slots, edge_slots, intersected, contour_counts, ambiguities = _C.contour_dual_contour(*hashmap_vert, coords.contiguous(), scalar.contiguous(), resolution + 1, resolution + 1, resolution + 1)
++    _TRACE.update(coords=coords.cpu().numpy(),grid_vertices=grid_verts.cpu().numpy(),scalar=scalar.cpu().numpy(),dual_slots=dual_slots.cpu().numpy(),edge_slots=edge_slots.cpu().numpy(),counts=contour_counts.cpu().numpy(),ambiguities=ambiguities.cpu().numpy(),center=center.cpu().numpy(),scale=scale,eps=eps,resolution=resolution)
++    dual_verts = dual_slots.reshape(-1,3)
+     print('Quad Topology ...')
+     quad_list, dir_list = ([], [])
+     nz = torch.nonzero(intersected)
+@@ -82,15 +86,31 @@
+         neigh = coords[v_idx].unsqueeze(1) + edge_neighbor_voxel_offset[0, a_idx]
+         keys = torch.cat([torch.zeros((neigh.shape[0] * 4, 1), dtype=torch.int32, device=device), neigh.reshape(-1, 3)], dim=1)
+         lookup = _C.hashmap_lookup_3d_cuda(*hashmap_vox, keys, resolution, resolution, resolution).reshape(-1, 4).int()
+-        mask = (lookup != 4294967295).all(dim=1)
+-        if mask.any():
+-            quad_list.append(lookup[mask])
+-            dir_list.append(intersected[v_idx[mask], a_idx[mask]])
++        if not ((lookup >= 0) & (lookup < Nvox)).all().item():
++            raise ValueError('A crossed primal edge lacks four valid sparse cells')
++        primal_low = coords[v_idx].clone()
++        for axis in range(3):
++            primal_low[:,axis] += (a_idx != axis).to(torch.int32)
++        relative = primal_low.unsqueeze(1) - coords[lookup.long()]
++        edge_codes = torch.empty_like(lookup)
++        for axis,other in enumerate(((1,2),(0,2),(0,1))):
++            select = a_idx == axis
++            if select.any():
++                offsets = relative[select]
++                if not ((offsets >= 0) & (offsets <= 1)).all().item() or not (offsets[:,:,axis] == 0).all().item():
++                    raise ValueError('Invalid primal edge to incident-cell offset')
++                edge_codes[select] = axis*4+2*offsets[:,:,other[0]]+offsets[:,:,other[1]]
++        slots = edge_slots[lookup.long(),edge_codes.long()]
++        if not ((slots >= 0) & (slots < contour_counts[lookup.long()])).all().item():
++            raise ValueError('Primal edge contour slot contract failed')
++        quad_list.append(lookup*4+slots)
++        dir_list.append(intersected[v_idx,a_idx])
+     if not quad_list:
+         return (torch.zeros((0, 3), device=device), torch.zeros((0, 3), device=device, dtype=torch.int32))
+     quad_indices = torch.cat(quad_list, dim=0)
+     intersected_dir = torch.cat(dir_list, dim=0).int()
+     print('Re-indexing vertices ...')
++    Nvox *= 4
+     active = torch.zeros(Nvox, dtype=torch.bool, device=device)
+     active[quad_indices.flatten()] = True
+     vert_map = torch.full((Nvox,), -1, dtype=torch.int32, device=device)
+diff --git a/setup.py b/setup.py
+--- a/setup.py
++++ b/setup.py
+@@ -3,7 +3,7 @@
+ from pathlib import Path
+ import os
+ setup(name='cumesh-dc-isolated-proof', version='0.0.0', packages=[],
+- ext_modules=[CUDAExtension('_h3_dc', sources=['bindings.cpp','src/hash/hash.cu','src/remesh/simple_dual_contour.cu','src/remesh/svox2vert.cu'],
++ ext_modules=[CUDAExtension('_h3_dc_contours', sources=['bindings.cpp','src/hash/hash.cu','src/remesh/simple_dual_contour.cu','src/remesh/svox2vert.cu','src/remesh/contour_dual.cu'],
+  include_dirs=[str(Path(os.environ['CUDA_HOME'])/'include/cccl')],
+  extra_compile_args={'cxx':['-O3','-std=c++20'], 'nvcc':['-O3','-std=c++20','-allow-unsupported-compiler','--threads=1']})],
+  cmdclass={'build_ext':BuildExtension})
+diff --git a/src/remesh/contour_dual.cu b/src/remesh/contour_dual.cu
+--- /dev/null
++++ b/src/remesh/contour_dual.cu
+@@ -0,0 +1,133 @@
++// SPDX-License-Identifier: MIT
++// Independent connected-contour extension of CuMesh d10e54's MIT crossing mean.
++// Original CuMesh copyright (c) 2025 Jianfeng XIANG; see retained LICENSE.
++#include <torch/extension.h>
++#include <c10/cuda/CUDAGuard.h>
++#include <c10/cuda/CUDAStream.h>
++#include <cuda_runtime.h>
++#include <limits>
++#include "../hash/hash.cuh"
++
++namespace {
++__device__ int root_of(int* parents, int i) {
++    for (int j=0; j<12 && parents[i]!=i; ++j) i=parents[i];
++    return i;
++}
++__device__ void join(int* parents, int* degree, int a, int b) {
++    ++degree[a]; ++degree[b];
++    a=root_of(parents,a); b=root_of(parents,b);
++    if(a!=b) parents[max(a,b)]=min(a,b);
++}
++__device__ int edge_id(int a, int b) {
++    int diff=a^b, axis=diff==1?0:(diff==2?1:2), lo=a&b;
++    int u=axis==0?1:0, v=axis==2?1:2;
++    return axis*4+2*((lo>>u)&1)+((lo>>v)&1);
++}
++template<class Key> __device__ bool sample(
++    const Key* keys,const uint32_t* values,size_t capacity,const float* scalar,size_t count,
++    uint64_t flat,float& out) {
++    Key key=static_cast<Key>(flat);size_t slot=hash(key,capacity);
++    for(size_t probe=0;probe<capacity&&probe<4096;++probe){
++        Key found=keys[slot];
++        if(found==std::numeric_limits<Key>::max()) return false;
++        if(found==key){uint32_t index=values[slot];if(index>=count)return false;out=scalar[index];return isfinite(out);}
++        slot=(slot+1==capacity)?0:slot+1;
++    }
++    return false;
++}
++template<class Key> __global__ void contour_kernel(
++    const Key* keys,const uint32_t* values,size_t capacity,const float* scalar,size_t scalar_count,
++    const int32_t* coords,int count,int W,int H,int D,float* vertices,int32_t* edge_slots,
++    int32_t* intersected,int32_t* counts,int32_t* ambiguities,int32_t* errors) {
++    int row=blockIdx.x*blockDim.x+threadIdx.x;if(row>=count)return;
++    int xyz[3]={coords[3*row],coords[3*row+1],coords[3*row+2]};
++    for(int i=0;i<12;++i){vertices[row*12+i]=0;edge_slots[row*12+i]=-1;}
++    for(int i=0;i<3;++i)intersected[row*3+i]=0;
++    counts[row]=0;ambiguities[row]=0;errors[row]=0;
++    if(xyz[0]<0||xyz[1]<0||xyz[2]<0||xyz[0]>=W-1||xyz[1]>=H-1||xyz[2]>=D-1){errors[row]=1;return;}
++    float s[8];
++    for(int i=0;i<8;++i){
++        uint64_t x=xyz[0]+(i&1),y=xyz[1]+((i>>1)&1),z=xyz[2]+((i>>2)&1);
++        if(!sample(keys,values,capacity,scalar,scalar_count,(x*H+y)*D+z,s[i])){errors[row]=2;return;}
++    }
++    int parents[12],degree[12],crossed[12],components[12];float3 points[12];
++    int crossings=0;
++    for(int axis=0;axis<3;++axis){
++        int u=axis==0?1:0,v=axis==2?1:2;
++        for(int a=0;a<2;++a)for(int b=0;b<2;++b){
++            int e=axis*4+2*a+b,lo=(a<<u)|(b<<v),hi=lo|(1<<axis);
++            parents[e]=e;degree[e]=0;components[e]=-1;
++            crossed[e]=(s[lo]<0)!=(s[hi]<0);
++            if(!crossed[e])continue;
++            ++crossings;float den=s[hi]-s[lo],t=-s[lo]/den;
++            if(!isfinite(den)||den==0||!isfinite(t)||t<0||t>1){errors[row]=3;return;}
++            float p[3]={(float)(xyz[0]+(lo&1)),(float)(xyz[1]+((lo>>1)&1)),(float)(xyz[2]+((lo>>2)&1))};
++            p[axis]+=t;points[e]=make_float3(p[0],p[1],p[2]);
++            if(a==1&&b==1)intersected[row*3+axis]=(s[lo]<0)?1:-1;
++        }
++    }
++    if(!crossings)return;
++    for(int axis=0;axis<3;++axis)for(int side=0;side<2;++side){
++        // The same positive-axis cycle is used on both sides of a shared face.
++        int u=(axis+1)%3,v=(axis+2)%3,base=side<<axis;
++        int corners[4]={base,base|(1<<u),base|(1<<u)|(1<<v),base|(1<<v)};
++        int edges[4],active[4],n=0;
++        for(int i=0;i<4;++i){edges[i]=edge_id(corners[i],corners[(i+1)%4]);if(crossed[edges[i]])active[n++]=i;}
++        if(n==0)continue;
++        if(n==2)join(parents,degree,edges[active[0]],edges[active[1]]);
++        else if(n==4){
++            double a=s[corners[0]],b=s[corners[1]],c=s[corners[2]],d=s[corners[3]];
++            double determinant=a*c-b*d,denominator=a+c-b-d;
++            if(!isfinite(determinant)||!isfinite(denominator)||determinant==0||denominator==0){errors[row]=4;return;}
++            bool inside=(determinant<0)!=(denominator<0);++ambiguities[row];
++            for(int i=0;i<4;++i)if((s[corners[i]]<0)!=inside)join(parents,degree,edges[(i+3)%4],edges[i]);
++        }else{errors[row]=5;return;}
++    }
++    int component_count=0,sizes[4]={0,0,0,0};float3 sum[4];
++    for(int i=0;i<4;++i)sum[i]=make_float3(0,0,0);
++    for(int e=0;e<12;++e)if(crossed[e]){
++        if(degree[e]!=2){errors[row]=6;return;}
++        int representative=root_of(parents,e),slot=components[representative];
++        if(slot<0){if(component_count>=4){errors[row]=7;return;}slot=component_count++;components[representative]=slot;}
++        edge_slots[row*12+e]=slot;++sizes[slot];
++        sum[slot].x+=points[e].x;sum[slot].y+=points[e].y;sum[slot].z+=points[e].z;
++    }
++    for(int k=0;k<component_count;++k){
++        if(sizes[k]<3){errors[row]=8;return;}
++        float p[3]={sum[k].x/sizes[k],sum[k].y/sizes[k],sum[k].z/sizes[k]};
++        for(int axis=0;axis<3;++axis){
++            if(!isfinite(p[axis])||p[axis]<xyz[axis]||p[axis]>xyz[axis]+1){errors[row]=9;return;}
++            vertices[row*12+k*3+axis]=p[axis];
++        }
++        for(int j=0;j<k;++j)if(p[0]==vertices[row*12+j*3]&&p[1]==vertices[row*12+j*3+1]&&p[2]==vertices[row*12+j*3+2]){errors[row]=10;return;}
++    }
++    counts[row]=component_count;
++}
++}
++
++std::tuple<torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor,torch::Tensor> contour_dual_contour(
++    const torch::Tensor& keys,const torch::Tensor& values,const torch::Tensor& coords,const torch::Tensor& scalar,
++    int W,int H,int D) {
++    TORCH_CHECK(keys.is_cuda()&&values.is_cuda()&&coords.is_cuda()&&scalar.is_cuda(),"Contour inputs must be CUDA tensors");
++    TORCH_CHECK(keys.device()==coords.device()&&values.device()==coords.device()&&scalar.device()==coords.device(),"Contour input devices differ");
++    TORCH_CHECK(keys.is_contiguous()&&values.is_contiguous()&&coords.is_contiguous()&&scalar.is_contiguous(),"Contour inputs must be contiguous");
++    TORCH_CHECK((keys.scalar_type()==torch::kUInt32||keys.scalar_type()==torch::kUInt64)&&values.scalar_type()==torch::kUInt32&&coords.scalar_type()==torch::kInt32&&scalar.scalar_type()==torch::kFloat32,"Contour input dtypes differ from ABI");
++    TORCH_CHECK(keys.dim()==1&&values.dim()==1&&scalar.dim()==1&&coords.dim()==2&&coords.size(1)==3&&keys.numel()==values.numel(),"Invalid contour input shapes");
++    TORCH_CHECK(coords.size(0)>0&&coords.size(0)<=500000&&keys.numel()>0&&keys.numel()<=16777216&&scalar.numel()>0&&scalar.numel()<=4000000,"Contour resource admission exceeded");
++    TORCH_CHECK(W>=2&&H>=2&&D>=2&&W<=4096&&H<=4096&&D<=4096,"Invalid contour grid dimensions");
++    uint64_t volume=(uint64_t)W*H*D;
++    TORCH_CHECK(keys.scalar_type()!=torch::kUInt32||volume<=UINT32_MAX,"Contour key width cannot encode this grid");
++    c10::cuda::CUDAGuard guard(coords.device());
++    TORCH_CHECK(torch::isfinite(scalar).all().item<bool>(),"Contour scalar field must be finite");
++    int count=(int)coords.size(0);
++    auto f=torch::TensorOptions().dtype(torch::kFloat32).device(coords.device());auto i=f.dtype(torch::kInt32);
++    auto vertices=torch::empty({count,4,3},f),slots=torch::empty({count,12},i),intersected=torch::empty({count,3},i);
++    auto counts=torch::empty({count},i),ambiguities=torch::empty({count},i),errors=torch::empty({count},i);
++    dim3 threads(128),blocks((count+127)/128);
++    if(keys.scalar_type()==torch::kUInt32)contour_kernel<<<blocks,threads,0,c10::cuda::getCurrentCUDAStream()>>>(keys.data_ptr<uint32_t>(),values.data_ptr<uint32_t>(),keys.numel(),scalar.data_ptr<float>(),scalar.numel(),coords.data_ptr<int32_t>(),count,W,H,D,vertices.data_ptr<float>(),slots.data_ptr<int32_t>(),intersected.data_ptr<int32_t>(),counts.data_ptr<int32_t>(),ambiguities.data_ptr<int32_t>(),errors.data_ptr<int32_t>());
++    else contour_kernel<<<blocks,threads,0,c10::cuda::getCurrentCUDAStream()>>>(keys.data_ptr<uint64_t>(),values.data_ptr<uint32_t>(),keys.numel(),scalar.data_ptr<float>(),scalar.numel(),coords.data_ptr<int32_t>(),count,W,H,D,vertices.data_ptr<float>(),slots.data_ptr<int32_t>(),intersected.data_ptr<int32_t>(),counts.data_ptr<int32_t>(),ambiguities.data_ptr<int32_t>(),errors.data_ptr<int32_t>());
++    auto error=cudaGetLastError();TORCH_CHECK(error==cudaSuccess,"Contour kernel launch failed: ",cudaGetErrorString(error));
++    auto host_errors=errors.cpu();auto ptr=host_errors.data_ptr<int32_t>();
++    for(int row=0;row<count;++row)TORCH_CHECK(ptr[row]==0,"Unsupported contour cell=",row," code=",ptr[row]," (coordinate/corner/interpolation/saddle/cycle/count/geometry)");
++    return {vertices,slots,intersected,counts,ambiguities};
++}

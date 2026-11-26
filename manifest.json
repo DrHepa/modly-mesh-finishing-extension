@@ -1,0 +1,1069 @@
+{
+  "id": "mesh-finishing",
+  "name": "Mesh Finishing",
+  "type": "process",
+  "entry": "processor.py",
+  "version": "0.12.0",
+  "author": "DrHepa",
+  "description": "Inspect original GLBs, repair exact degenerate faces, simplify, generate UV, and transfer PBR using external Blender.",
+  "source": "https://github.com/DrHepa/modly-mesh-finishing-extension",
+  "nodes": [
+    {
+      "id": "inspect-mesh",
+      "name": "Inspect Mesh",
+      "input": "mesh",
+      "output": "mesh",
+      "params_schema": [
+        {
+          "id": "analysis_mode",
+          "label": "Analysis mode",
+          "type": "select",
+          "default": "structural",
+          "options": [
+            {
+              "value": "structural",
+              "label": "Structural + original UV"
+            },
+            {
+              "value": "geometry",
+              "label": "Blender geometry (read-only, partial)"
+            }
+          ]
+        },
+        {
+          "id": "timeout_seconds",
+          "label": "Native inspection timeout seconds",
+          "type": "int",
+          "default": 600,
+          "min": 30,
+          "max": 3600
+        }
+      ]
+    },
+    {
+      "id": "conservative-repair",
+      "name": "Conservative Repair",
+      "input": "mesh",
+      "output": "mesh",
+      "params_schema": []
+    },
+    {
+      "id": "reconstruct-wtivo",
+      "name": "Reconstruct Mesh (WTiVo, geometry only)",
+      "input": "mesh",
+      "output": "mesh",
+      "params_schema": [
+        {
+          "id": "repair_mode",
+          "label": "Reconstruction mode",
+          "type": "select",
+          "default": "volume",
+          "options": [
+            {
+              "value": "volume",
+              "label": "Full volume (new surface)",
+              "hint": "Requires the optional WTiVo runtime. Full-volume reconstruction exports the entire result without UVs or materials. Keep the original textured HIGH for Rebake."
+            },
+            {
+              "value": "local_holes",
+              "label": "Local small holes (explicit, bounded)",
+              "hint": "Requires the optional WTiVo runtime. Keeps source geometry and closed components; accepts only clean convex loops with at most 32 edges and diameter at most 5% of the component diagonal. Unsupported loops are refused without changing modes. A repair exports the entire result without UVs or materials; keep the original textured HIGH for Rebake. A verified exact no-op returns the original unchanged."
+            }
+          ]
+        },
+        {
+          "id": "drop_below_largest_area_percent",
+          "label": "Drop source components below largest area %",
+          "type": "float",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.01,
+          "tooltip": "Explicit source-component removal before reconstruction. Zero keeps all without measuring area. Per object, drop only components strictly below this percentage of its largest world surface area; preserve equality, every largest component and isolated objects. Not an inferred noise filter."
+        },
+        {
+          "id": "input_resolution",
+          "label": "Input voxel resolution",
+          "type": "int",
+          "default": 32,
+          "min": 2,
+          "max": 256,
+          "tooltip": "Explicit finite WTiVo thick field resolution; not a triangle budget."
+        },
+        {
+          "id": "final_resolution",
+          "label": "Final voxel resolution",
+          "type": "int",
+          "default": 32,
+          "min": 2,
+          "max": 256,
+          "tooltip": "Explicit finite FaithC surface resolution. Reconstruction creates new surfaces."
+        },
+        {
+          "id": "proxy_points",
+          "label": "Maximum proxy points",
+          "type": "int",
+          "default": 4096,
+          "min": 4,
+          "max": 1000000,
+          "tooltip": "Predeclared resource bound, not a decimator. Each source component selected by the explicit area policy is processed separately."
+        },
+        {
+          "id": "max_rounds",
+          "label": "Maximum graph optimization rounds",
+          "type": "int",
+          "default": 4096,
+          "min": 1,
+          "max": 65536,
+          "tooltip": "Finite native optimization work bound."
+        },
+        {
+          "id": "memory_budget_mib",
+          "label": "Host memory budget MiB",
+          "type": "int",
+          "default": 8192,
+          "min": 512,
+          "max": 65536,
+          "tooltip": "Conservative resident-memory watchdog for the owned Linux process group; not a GPU VRAM quota."
+        },
+        {
+          "id": "max_output_triangles",
+          "label": "Maximum reconstructed triangles",
+          "type": "int",
+          "default": 1000000,
+          "min": 4,
+          "max": 1250000,
+          "tooltip": "Reject above this cap before publication; use a separate Simplify node afterward."
+        },
+        {
+          "id": "timeout_seconds",
+          "label": "Reconstruction timeout seconds",
+          "type": "int",
+          "default": 1800,
+          "min": 30,
+          "max": 14400,
+          "tooltip": "One total timeout covers every component, reconstruction, validation, export and reimport."
+        }
+      ]
+    },
+    {
+      "id": "reconstruct-cumesh-dc",
+      "name": "Reconstruct Mesh (CuMesh DC, unsigned)",
+      "input": "mesh",
+      "output": "mesh",
+      "params_schema": [
+        {
+          "id": "repair_mode",
+          "label": "Reconstruction mode",
+          "type": "select",
+          "default": "volume",
+          "options": [
+            {
+              "value": "volume",
+              "label": "Full unsigned volume (existing policy)",
+              "hint": "Requires the optional CuMesh DC runtime. Full unsigned-volume reconstruction exports the entire result without UVs or materials, using the selected shell policy. Keep the original textured HIGH for Rebake."
+            },
+            {
+              "value": "local_holes",
+              "label": "Local small holes (paired-band midpoint)",
+              "hint": "Requires the optional CuMesh DC runtime. Keeps source triangles and closed components; patches clean convex loops with at most 32 edges and diameter at most 5% of the component diagonal. Requires Keep all sheets and 0% removal. Reflected frames use the same strict numerical and contact checks. Unsupported cases are refused without changing modes. A repair exports the entire result without UVs or materials; keep the original textured HIGH for Rebake. A verified exact no-op returns the original unchanged."
+            }
+          ]
+        },
+        {
+          "id": "drop_below_largest_area_percent",
+          "label": "Drop source components below largest area %",
+          "type": "float",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.01,
+          "tooltip": "Explicit source-component removal before reconstruction. Zero keeps all without measuring area. Per object, drop only components strictly below this percentage of its largest world surface area; preserve equality, every largest component and isolated objects. Not an inferred noise filter."
+        },
+        {
+          "id": "shell_policy",
+          "label": "Unsigned sheet policy",
+          "type": "select",
+          "default": "keep_all",
+          "options": [
+            {"label": "Keep all generated sheets (default)", "value": "keep_all"},
+            {"label": "Verified outer sheet (closed sources only)", "value": "verified_outer", "hint": "Removes only one verified inward sheet per closed outward component. Open, touching, ambiguous or over-budget cases are refused. This is still an unsigned offset, not a signed solid."}
+          ]
+        },
+        {
+          "id": "resolution",
+          "label": "Unsigned contour resolution",
+          "type": "select",
+          "default": 32,
+          "options": [
+            { "value": 32, "label": "32" },
+            { "value": 64, "label": "64" },
+            { "value": 128, "label": "128" }
+          ],
+          "tooltip": "Only 32, 64 or 128 are admitted. Resolution 128 was verified in one local-hole repair case; larger grids can require more memory. Not a triangle target."
+        },
+        {
+          "id": "memory_budget_mib",
+          "label": "Host memory budget MiB",
+          "type": "int",
+          "default": 8192,
+          "min": 512,
+          "max": 65536,
+          "step": 1,
+          "tooltip": "Cooperative Linux owned-process-group RSS, including the CPU Blender BVH; not a GPU VRAM quota."
+        },
+        {
+          "id": "max_output_triangles",
+          "label": "Maximum output triangles",
+          "type": "int",
+          "default": 1000000,
+          "min": 4,
+          "max": 1250000,
+          "step": 1,
+          "tooltip": "Reject above the common geometry cap before publication; use separate Simplify afterward."
+        },
+        {
+          "id": "timeout_seconds",
+          "label": "Total reconstruction timeout seconds",
+          "type": "int",
+          "default": 180,
+          "min": 30,
+          "max": 180,
+          "step": 1,
+          "tooltip": "One total deadline covers all source components, CPU BVH distance, actual CUDA contours, optional sheet proof, validation and export. Band=1 is fixed; keep_all remains the default."
+        }
+      ]
+    },
+    {
+      "id": "simplify-mesh",
+      "name": "Simplify Mesh",
+      "input": "mesh",
+      "output": "mesh",
+      "params_schema": [
+        {
+          "id": "simplification_backend",
+          "label": "Geometry simplification backend",
+          "type": "select",
+          "default": "blender",
+          "options": [
+            {
+              "value": "blender",
+              "label": "Blender (default; no optional GPU tools)",
+              "hint": "Reduction exports geometry only: no UVs or materials in the entire result. Keep the original textured HIGH for Rebake. An already-within-budget no-op returns the original unchanged. Uses Blender; no optional GPU runtime."
+            },
+            {
+              "value": "cumesh_install_if_needed",
+              "label": "CuMesh GPU (downloads/installs optional runtime on first use)",
+              "hint": "Reduction exports geometry only: no UVs or materials in the entire result. Keep the original textured HIGH for Rebake. An already-within-budget no-op returns the original unchanged. Explicitly downloads/installs the optional CuMesh runtime if needed; operational GPU errors stop, without Blender fallback."
+            },
+            {
+              "value": "cumesh_existing",
+              "label": "CuMesh GPU (use installed runtime only)",
+              "hint": "Reduction exports geometry only: no UVs or materials in the entire result. Keep the original textured HIGH for Rebake. An already-within-budget no-op returns the original unchanged. Requires an installed optional CuMesh runtime; no download/install or silent Blender fallback."
+            }
+          ]
+        },
+        {
+          "id": "triangle_budget",
+          "label": "Triangle budget (not guaranteed)",
+          "type": "int",
+          "default": 80000,
+          "min": 1,
+          "max": 2000000
+        },
+        {
+          "id": "max_error_relative",
+          "label": "Maximum relative geometry error",
+          "type": "float",
+          "default": 0.003,
+          "min": 1e-06,
+          "max": 0.1,
+          "step": 1e-06
+        },
+        {
+          "id": "max_error_world",
+          "label": "Maximum world-space geometry error",
+          "type": "float",
+          "default": 0.01,
+          "min": 1e-06,
+          "max": 1000,
+          "step": 1e-06
+        },
+        {
+          "id": "protected_component_triangles",
+          "label": "Preserve components up to this triangle count",
+          "type": "int",
+          "default": 64,
+          "min": 0,
+          "max": 10000
+        },
+        {
+          "id": "timeout_seconds",
+          "label": "Maximum execution seconds",
+          "type": "int",
+          "default": 14400,
+          "min": 30,
+          "max": 86400
+        }
+      ]
+    },
+    {
+      "id": "optimize-rebake",
+      "name": "Optimize & Rebake",
+      "input": "mesh",
+      "output": "mesh",
+      "params_schema": [
+        {
+          "id": "simplification_backend",
+          "label": "Geometry simplification backend",
+          "type": "select",
+          "default": "blender",
+          "options": [
+            {
+              "value": "blender",
+              "label": "Blender (default; no optional GPU tools)"
+            },
+            {
+              "value": "cumesh_install_if_needed",
+              "label": "CuMesh GPU (downloads/installs optional runtime on first use)"
+            },
+            {
+              "value": "cumesh_existing",
+              "label": "CuMesh GPU (use installed runtime only)"
+            }
+          ]
+        },
+        {
+          "id": "triangle_budget",
+          "label": "Triangle budget (not guaranteed)",
+          "type": "int",
+          "default": 80000,
+          "min": 1,
+          "max": 2000000
+        },
+        {
+          "id": "max_error_relative",
+          "label": "Maximum relative geometry error",
+          "type": "float",
+          "default": 0.003,
+          "min": 1e-06,
+          "max": 0.1,
+          "step": 1e-06
+        },
+        {
+          "id": "max_error_world",
+          "label": "Maximum world-space geometry error",
+          "type": "float",
+          "default": 0.01,
+          "min": 1e-06,
+          "max": 1000,
+          "step": 1e-06
+        },
+        {
+          "id": "atlas_packing",
+          "label": "Generated atlas packing",
+          "type": "select",
+          "default": "full",
+          "options": [
+            {
+              "value": "full",
+              "label": "Full atlas (default)"
+            },
+            {
+              "value": "compact",
+              "label": "Compact atlas (75% extent; lower texel density)"
+            }
+          ]
+        },
+        {
+          "id": "resolution",
+          "label": "Global texture resolution",
+          "type": "select",
+          "default": 2048,
+          "options": [
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "base_resolution",
+          "label": "Base + alpha resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "normal_resolution",
+          "label": "Normal resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "orm_resolution",
+          "label": "Packed ORM (AO / roughness / metalness) resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "emission_resolution",
+          "label": "Emission resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "projection_distance_relative",
+          "label": "Projection distance / component diagonal",
+          "type": "float",
+          "default": 0.01,
+          "min": 1e-06,
+          "max": 0.1,
+          "step": 1e-06
+        },
+        {
+          "id": "cage_extrusion_relative",
+          "label": "Cage extrusion / component diagonal",
+          "type": "float",
+          "default": 0.005,
+          "min": 1e-06,
+          "max": 0.1,
+          "step": 1e-06
+        },
+        {
+          "id": "protected_component_triangles",
+          "label": "Preserve components up to this triangle count",
+          "type": "int",
+          "default": 64,
+          "min": 0,
+          "max": 10000
+        },
+        {
+          "id": "timeout_seconds",
+          "label": "Maximum execution seconds",
+          "type": "int",
+          "default": 14400,
+          "min": 30,
+          "max": 86400
+        },
+        {
+          "id": "ao_mode",
+          "label": "Ambient occlusion",
+          "type": "select",
+          "default": "transfer",
+          "options": [
+            {
+              "value": "transfer",
+              "label": "Transfer authored AO / neutral if missing"
+            },
+            {
+              "value": "generate_if_missing",
+              "label": "Generate geometric AO only if missing (opaque LOW)"
+            }
+          ],
+          "tooltip": "Preserves authored AO. Optional CPU self-bake from final LOW parts of the same authored object; rejects nonopaque source materials."
+        }
+      ]
+    },
+    {
+      "id": "uv-repack-rebake",
+      "name": "UV / Repack + Rebake",
+      "input": "mesh",
+      "output": "mesh",
+      "params_schema": [
+        {
+          "id": "high_poly_path",
+          "label": "Original textured HIGH (optional)",
+          "type": "string",
+          "default": "",
+          "pickerIntent": "mesh",
+          "tooltip": "Empty preserves the existing same-source UV/rebake route. For a distinct geometry-only target, select its original textured HIGH; strict component, transform, projection and native coverage gates still apply. Genuinely new or unmatched surfaces are rejected, not filled."
+        },
+        {
+          "id": "max_error_relative",
+          "label": "Maximum relative geometry error",
+          "type": "float",
+          "default": 0.003,
+          "min": 1e-06,
+          "max": 0.1,
+          "step": 1e-06
+        },
+        {
+          "id": "max_error_world",
+          "label": "Maximum world-space geometry error",
+          "type": "float",
+          "default": 0.01,
+          "min": 1e-06,
+          "max": 1000,
+          "step": 1e-06
+        },
+        {
+          "id": "atlas_packing",
+          "label": "Generated atlas packing",
+          "type": "select",
+          "default": "full",
+          "options": [
+            {
+              "value": "full",
+              "label": "Full atlas (default)"
+            },
+            {
+              "value": "compact",
+              "label": "Compact atlas (75% extent; lower texel density)"
+            }
+          ]
+        },
+        {
+          "id": "resolution",
+          "label": "Global texture resolution",
+          "type": "select",
+          "default": 2048,
+          "options": [
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "base_resolution",
+          "label": "Base + alpha resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "normal_resolution",
+          "label": "Normal resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "orm_resolution",
+          "label": "Packed ORM (AO / roughness / metalness) resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "emission_resolution",
+          "label": "Emission resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "projection_distance_relative",
+          "label": "Projection distance / component diagonal",
+          "type": "float",
+          "default": 0.01,
+          "min": 1e-06,
+          "max": 0.1,
+          "step": 1e-06
+        },
+        {
+          "id": "cage_extrusion_relative",
+          "label": "Cage extrusion / component diagonal",
+          "type": "float",
+          "default": 0.005,
+          "min": 1e-06,
+          "max": 0.1,
+          "step": 1e-06
+        },
+        {
+          "id": "timeout_seconds",
+          "label": "Maximum execution seconds",
+          "type": "int",
+          "default": 14400,
+          "min": 30,
+          "max": 86400
+        },
+        {
+          "id": "ao_mode",
+          "label": "Ambient occlusion",
+          "type": "select",
+          "default": "transfer",
+          "options": [
+            {
+              "value": "transfer",
+              "label": "Transfer authored AO / neutral if missing"
+            },
+            {
+              "value": "generate_if_missing",
+              "label": "Generate geometric AO only if missing (opaque LOW)"
+            }
+          ],
+          "tooltip": "Preserves authored AO. Optional CPU self-bake from final LOW parts of the same authored object; rejects nonopaque source materials."
+        }
+      ]
+    },
+    {
+      "id": "rebake-onto-mesh",
+      "name": "Rebake onto Mesh",
+      "input": "mesh",
+      "output": "mesh",
+      "params_schema": [
+        {
+          "id": "high_poly_path",
+          "label": "Original high-poly GLB",
+          "type": "string",
+          "default": "",
+          "pickerIntent": "mesh"
+        },
+        {
+          "id": "max_error_relative",
+          "label": "Maximum relative geometry error",
+          "type": "float",
+          "default": 0.003,
+          "min": 1e-06,
+          "max": 0.1,
+          "step": 1e-06
+        },
+        {
+          "id": "max_error_world",
+          "label": "Maximum world-space geometry error",
+          "type": "float",
+          "default": 0.01,
+          "min": 1e-06,
+          "max": 1000,
+          "step": 1e-06
+        },
+        {
+          "id": "resolution",
+          "label": "Global texture resolution",
+          "type": "select",
+          "default": 2048,
+          "options": [
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "base_resolution",
+          "label": "Base + alpha resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "normal_resolution",
+          "label": "Normal resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "orm_resolution",
+          "label": "Packed ORM (AO / roughness / metalness) resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "emission_resolution",
+          "label": "Emission resolution",
+          "type": "select",
+          "default": 0,
+          "options": [
+            {
+              "value": 0,
+              "label": "Inherit global"
+            },
+            {
+              "value": 256,
+              "label": "256 px"
+            },
+            {
+              "value": 512,
+              "label": "512 px"
+            },
+            {
+              "value": 1024,
+              "label": "1024 px"
+            },
+            {
+              "value": 2048,
+              "label": "2048 px"
+            },
+            {
+              "value": 4096,
+              "label": "4096 px"
+            }
+          ]
+        },
+        {
+          "id": "projection_distance_relative",
+          "label": "Projection distance / component diagonal",
+          "type": "float",
+          "default": 0.01,
+          "min": 1e-06,
+          "max": 0.1,
+          "step": 1e-06
+        },
+        {
+          "id": "cage_extrusion_relative",
+          "label": "Cage extrusion / component diagonal",
+          "type": "float",
+          "default": 0.005,
+          "min": 1e-06,
+          "max": 0.1,
+          "step": 1e-06
+        },
+        {
+          "id": "timeout_seconds",
+          "label": "Maximum execution seconds",
+          "type": "int",
+          "default": 14400,
+          "min": 30,
+          "max": 86400
+        },
+        {
+          "id": "ao_mode",
+          "label": "Ambient occlusion",
+          "type": "select",
+          "default": "transfer",
+          "options": [
+            {
+              "value": "transfer",
+              "label": "Transfer authored AO / neutral if missing"
+            },
+            {
+              "value": "generate_if_missing",
+              "label": "Generate geometric AO only if missing (opaque LOW)"
+            }
+          ],
+          "tooltip": "Preserves authored AO. Optional CPU self-bake from final LOW parts of the same authored object; rejects nonopaque source materials."
+        }
+      ]
+    }
+  ]
+}

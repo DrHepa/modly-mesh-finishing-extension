@@ -1,0 +1,411 @@
+{
+  "schema": 1,
+  "source_commit": "7a0ac7cb24fd0588f2f7a78c787779d760d36f48",
+  "source_url": "https://github.com/Mstafa-awad/WTiVo-WatertightVoxel",
+  "source_license": "GPL-3.0-or-later combined CGAL package",
+  "platform": "Linux AArch64/glibc2.39+/GB10sm121/driver580+/CUDA13.0/GCC13",
+  "shared_runtime": {
+    "python": "3.12.16",
+    "numpy": "2.4.6",
+    "torch": "2.12.0+cu130",
+    "pybind_headers": "3.0.1"
+  },
+  "pybind_header_sha256": "e6e9fc1c5adb87d470978eb3ad5b8e465d0f80d154a48b5c28c2ad5605d2391d",
+  "bundled": [
+    {
+      "filename": "upstream.tar",
+      "sha256": "f0ccee03a1bacc2e9d8eadda4dcd21e02a51fb6bfbaf5f2a4f0d7461d0cb3ab7",
+      "size_bytes": 512000
+    },
+    {
+      "filename": "linux-resource.patch",
+      "sha256": "82456e4d333342597fbd1e7555783524f00ea554ba7155d93b6cb74c01001695",
+      "size_bytes": 23074
+    },
+    {
+      "filename": "smoke.obj",
+      "sha256": "a52294b3808c85b813cb5771dd798e29e266c36d535ae2ab58652d5c3752649f",
+      "size_bytes": 524
+    },
+    {
+      "filename": "inspect_smoke.py",
+      "sha256": "de416a3084395315b61421b6697791be1fc2e38161067492a42a22e0850342be",
+      "size_bytes": 5405
+    }
+  ],
+  "patched_files": {
+    "CMakeLists.txt": "0ef58f13f156a88318d5c540d8656d3caca3926e917d1b881d8022d384e7348c",
+    "wtivo.py": "12a04841b9883bd94f7c597fca4746890b7c808266a9df79a6ff4b9d7a253dff",
+    "scripts/build_gpupr.py": "836072efbc58dc5b695d3332866aab445111ef347b5c0df54b4ba402b860a68b",
+    "native/core/wtivo_core.cpp": "c0df55eefa08c7b1a32cc88ffdc4eb4e29e348326260dc4c1b2ab0402727c59c",
+    "native/vdb/wtivo_vdb.cpp": "9822879ec867e3960450dd40e975cb376758e0d245d6797a2667212fa20f271c"
+  },
+  "deb_artifacts": [
+    {
+      "name": "libblosc-dev",
+      "version": "1.21.5+ds-1build1",
+      "filename": "libblosc-dev_1.21.5+ds-1build1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/c/c-blosc/libblosc-dev_1.21.5+ds-1build1_arm64.deb",
+      "sha256": "af3fb4d0fe6248893256377a1346abb6d12ebc04f462ee6ce7956656b3622d0b",
+      "size_bytes": 32620
+    },
+    {
+      "name": "libboost1.83-dev",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "1412e461d573f66c9d5c7af63696a1d01e11a4724215299a3cf6afd1bcdd3d7f",
+      "size_bytes": 10746196
+    },
+    {
+      "name": "libboost-atomic1.83.0",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-atomic1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-atomic1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "287a505f519f8a33787d3278817bd66d374209f81dbdf1c315d657411f34af44",
+      "size_bytes": 239230
+    },
+    {
+      "name": "libboost-atomic1.83-dev",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-atomic1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-atomic1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "351ae4a158832289fb63323b0965d1b11e91888f3a717e0190fcf63851e1e418",
+      "size_bytes": 234590
+    },
+    {
+      "name": "libboost-chrono1.83.0t64",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-chrono1.83.0t64_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-chrono1.83.0t64_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "19f8a709d48d9c6d84bc355e91157e01c66623490d513561af6db780a8113379",
+      "size_bytes": 244324
+    },
+    {
+      "name": "libboost-chrono1.83-dev",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-chrono1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-chrono1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "3563e8258f50d1ce572bfc33730e59083195435dc7d91a286311e6111e015d11",
+      "size_bytes": 245414
+    },
+    {
+      "name": "libboost-date-time1.83.0",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-date-time1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-date-time1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "98f8c45441241b09402555238a4ffc4771b90763c1ec187be3b534c27e38a340",
+      "size_bytes": 235922
+    },
+    {
+      "name": "libboost-serialization1.83.0",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-serialization1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-serialization1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "5aa44c8c360e1c7c16b4d219542aab89f5fd41d075eb49b7ac06bc3a2ec5e8a9",
+      "size_bytes": 334922
+    },
+    {
+      "name": "libboost-serialization1.83-dev",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-serialization1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-serialization1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "547d027027d4a8c48d6c07ad4c4d8428795f4a2e4ee754655ef884d05bfffa24",
+      "size_bytes": 391884
+    },
+    {
+      "name": "libboost-date-time1.83-dev",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-date-time1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-date-time1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "9fe2228255eee5e93ff94c2f78aabc0a124b8f6e53b82f04836f78fef04d1870",
+      "size_bytes": 239012
+    },
+    {
+      "name": "libboost-dev",
+      "version": "1.83.0.1ubuntu2",
+      "filename": "libboost-dev_1.83.0.1ubuntu2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost-defaults/libboost-dev_1.83.0.1ubuntu2_arm64.deb",
+      "sha256": "806d2b5a3cad26e03c65166a94a2a719efcb47f1628e2d82fcb0d7fc47cf86db",
+      "size_bytes": 4308
+    },
+    {
+      "name": "libboost-program-options1.83.0",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-program-options1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-program-options1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "b1a52b6f32ad6c8fe2dee9b2589221c7320b6ee936f47f6461a761d85a6d13b5",
+      "size_bytes": 317000
+    },
+    {
+      "name": "libboost-program-options1.83-dev",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-program-options1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-program-options1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "16c354b4a887c9c5396112f101638e834d688e9b1a103b6b40f973bbda1e9496",
+      "size_bytes": 390650
+    },
+    {
+      "name": "libboost-program-options-dev",
+      "version": "1.83.0.1ubuntu2",
+      "filename": "libboost-program-options-dev_1.83.0.1ubuntu2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost-defaults/libboost-program-options-dev_1.83.0.1ubuntu2_arm64.deb",
+      "sha256": "be6f98bad1722254597908250aee6ff9f75363b19e668af587cf55ce05856a57",
+      "size_bytes": 4084
+    },
+    {
+      "name": "libboost-system1.83.0",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-system1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-system1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "2e6b718b122b3ef4f6e2d1866dc7dbbad17144702e05e5158594ad88e3fcbca0",
+      "size_bytes": 235974
+    },
+    {
+      "name": "libboost-system1.83-dev",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-system1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-system1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "7ba3067ee5004b0fd0f59bce82ded147e0392d8066d9a2895ce1af3c5e891ba8",
+      "size_bytes": 231156
+    },
+    {
+      "name": "libboost-system-dev",
+      "version": "1.83.0.1ubuntu2",
+      "filename": "libboost-system-dev_1.83.0.1ubuntu2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/b/boost-defaults/libboost-system-dev_1.83.0.1ubuntu2_arm64.deb",
+      "sha256": "63d32008ee7e13f4d0ba104ee8a554709993267241fa0c33cbdfa13e306a2c75",
+      "size_bytes": 4204
+    },
+    {
+      "name": "libboost-thread1.83-dev",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-thread1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-thread1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "3cc5cb90a8f7ad6ae075b205cb25a7f93b3c93d6b98f619ae902d63404589d47",
+      "size_bytes": 283614
+    },
+    {
+      "name": "libboost-thread-dev",
+      "version": "1.83.0.1ubuntu2",
+      "filename": "libboost-thread-dev_1.83.0.1ubuntu2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost-defaults/libboost-thread-dev_1.83.0.1ubuntu2_arm64.deb",
+      "sha256": "7b32887a9b883b3476e6c88e289b18dc658e09601f8f26a61bd332509b4da169",
+      "size_bytes": 4088
+    },
+    {
+      "name": "libgmpxx4ldbl",
+      "version": "2:6.3.0+dfsg-2ubuntu6.1",
+      "filename": "libgmpxx4ldbl_6.3.0+dfsg-2ubuntu6.1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/gmp/libgmpxx4ldbl_6.3.0+dfsg-2ubuntu6.1_arm64.deb",
+      "sha256": "cc9d360bb4da7eae45c9e07dcd0998110017b8f06aada3c64b5222d04283c10b",
+      "size_bytes": 10096
+    },
+    {
+      "name": "libgmp-dev",
+      "version": "2:6.3.0+dfsg-2ubuntu6.1",
+      "filename": "libgmp-dev_6.3.0+dfsg-2ubuntu6.1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/gmp/libgmp-dev_6.3.0+dfsg-2ubuntu6.1_arm64.deb",
+      "sha256": "f69fec9640bd3a21d1346aa15867b6f7c66a426a15ff902d29e5fb07e7844294",
+      "size_bytes": 333552
+    },
+    {
+      "name": "libmpfr-dev",
+      "version": "4.2.1-1build1.1",
+      "filename": "libmpfr-dev_4.2.1-1build1.1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/m/mpfr4/libmpfr-dev_4.2.1-1build1.1_arm64.deb",
+      "sha256": "7db797041c5e1ffcd9c0beb8d1b56d3a395304fbbdec3aff63949ddea31fd320",
+      "size_bytes": 288978
+    },
+    {
+      "name": "libcgal-dev",
+      "version": "5.6-1build3",
+      "filename": "libcgal-dev_5.6-1build3_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/c/cgal/libcgal-dev_5.6-1build3_arm64.deb",
+      "sha256": "5b77909189a76ca8818a2d3707c49782366a92d4a32e4bb6a88fe0500d485df0",
+      "size_bytes": 4969680
+    },
+    {
+      "name": "libimath-dev",
+      "version": "3.1.9-3.1ubuntu2",
+      "filename": "libimath-dev_3.1.9-3.1ubuntu2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/i/imath/libimath-dev_3.1.9-3.1ubuntu2_arm64.deb",
+      "sha256": "6dc51ee397d61b533a538da294404cd04a6e6856b085884447e97ada2c7d8746",
+      "size_bytes": 115272
+    },
+    {
+      "name": "libtbb-dev",
+      "version": "2021.11.0-2ubuntu2",
+      "filename": "libtbb-dev_2021.11.0-2ubuntu2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/o/onetbb/libtbb-dev_2021.11.0-2ubuntu2_arm64.deb",
+      "sha256": "a54652245d11dfe85969486b05d55682617ced265186501a56e0a669afa53d1c",
+      "size_bytes": 253284
+    },
+    {
+      "name": "libopenvdb-dev",
+      "version": "10.0.1-2.1build5",
+      "filename": "libopenvdb-dev_10.0.1-2.1build5_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/o/openvdb/libopenvdb-dev_10.0.1-2.1build5_arm64.deb",
+      "sha256": "e80b4e12370c060ab4292d88b8d9d5ac4dd0551472e59858fe740a0ce5b58b45",
+      "size_bytes": 576640
+    },
+    {
+      "name": "libopenvdb10.0t64",
+      "version": "10.0.1-2.1build5",
+      "filename": "libopenvdb10.0t64_10.0.1-2.1build5_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/o/openvdb/libopenvdb10.0t64_10.0.1-2.1build5_arm64.deb",
+      "sha256": "d50629c3e72f3dab983453752e63eaa9353eb8d9ead90cbea53d496f5fe3bfff",
+      "size_bytes": 3772454
+    },
+    {
+      "name": "libtbb12",
+      "version": "2021.11.0-2ubuntu2",
+      "filename": "libtbb12_2021.11.0-2ubuntu2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/o/onetbb/libtbb12_2021.11.0-2ubuntu2_arm64.deb",
+      "sha256": "7918a1dfda6b984fd53605657c27f97e44a96c81c78713db023eb1526cb39854",
+      "size_bytes": 79944
+    },
+    {
+      "name": "libtbbmalloc2",
+      "version": "2021.11.0-2ubuntu2",
+      "filename": "libtbbmalloc2_2021.11.0-2ubuntu2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/o/onetbb/libtbbmalloc2_2021.11.0-2ubuntu2_arm64.deb",
+      "sha256": "264212a6839655b61eca4a9711df84ea7aa6bf58bccbb3fc111e13d42d849c57",
+      "size_bytes": 43764
+    },
+    {
+      "name": "libtbbbind-2-5",
+      "version": "2021.11.0-2ubuntu2",
+      "filename": "libtbbbind-2-5_2021.11.0-2ubuntu2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/o/onetbb/libtbbbind-2-5_2021.11.0-2ubuntu2_arm64.deb",
+      "sha256": "ce9c04a9364d36586bb361ad4f2c047de2c32ffc0839069173ae952048b8cdcd",
+      "size_bytes": 16412
+    },
+    {
+      "name": "libimath-3-1-29t64",
+      "version": "3.1.9-3.1ubuntu2",
+      "filename": "libimath-3-1-29t64_3.1.9-3.1ubuntu2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/i/imath/libimath-3-1-29t64_3.1.9-3.1ubuntu2_arm64.deb",
+      "sha256": "952e44384af8bba0decc8cacbcaddaf1f48e6449955fa5abfd84ec143d2ae56b",
+      "size_bytes": 68152
+    },
+    {
+      "name": "libblosc1",
+      "version": "1.21.5+ds-1build1",
+      "filename": "libblosc1_1.21.5+ds-1build1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/c/c-blosc/libblosc1_1.21.5+ds-1build1_arm64.deb",
+      "sha256": "d84724d0770ebfb022101a0ae13eb05d9879b511421b605e25483064520b1d1d",
+      "size_bytes": 25700
+    },
+    {
+      "name": "libboost-iostreams1.83.0",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-iostreams1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-iostreams1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "4c49e19c02010d51a79480c939a10621c00c3ce726a239f27b725c8b0c9c7e0a",
+      "size_bytes": 258334
+    },
+    {
+      "name": "libboost-iostreams1.83-dev",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-iostreams1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/b/boost1.83/libboost-iostreams1.83-dev_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "57acbcb826c2dd8ae9e2673a4c1a796b2782453c38ccaf0953f23e439d739566",
+      "size_bytes": 265396
+    },
+    {
+      "name": "libboost-thread1.83.0",
+      "version": "1.83.0-2.1ubuntu3.2",
+      "filename": "libboost-thread1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/boost1.83/libboost-thread1.83.0_1.83.0-2.1ubuntu3.2_arm64.deb",
+      "sha256": "6bea94ae8e15280e976e39ca686de2007faa605540932f7b7af3f63e050ac0ad",
+      "size_bytes": 275174
+    },
+    {
+      "name": "libgmp10",
+      "version": "2:6.3.0+dfsg-2ubuntu6.1",
+      "filename": "libgmp10_6.3.0+dfsg-2ubuntu6.1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/gmp/libgmp10_6.3.0+dfsg-2ubuntu6.1_arm64.deb",
+      "sha256": "5a783429ec1a29fb74a9a59c1699579dd9742bd35722280b9ce10e1f3916b003",
+      "size_bytes": 243166
+    },
+    {
+      "name": "libmpfr6",
+      "version": "4.2.1-1build1.1",
+      "filename": "libmpfr6_4.2.1-1build1.1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/m/mpfr4/libmpfr6_4.2.1-1build1.1_arm64.deb",
+      "sha256": "83517e4377082a35dcce66ec5310881a848486279f64d737919d1819b7884201",
+      "size_bytes": 329460
+    },
+    {
+      "name": "liblog4cplus-2.0.5t64",
+      "version": "2.0.8-1.1ubuntu3",
+      "filename": "liblog4cplus-2.0.5t64_2.0.8-1.1ubuntu3_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/l/log4cplus/liblog4cplus-2.0.5t64_2.0.8-1.1ubuntu3_arm64.deb",
+      "sha256": "05f3d16750f291f43579d14fb1767f85214dc0a5810eeffe7db536b2d81e04a9",
+      "size_bytes": 181436
+    },
+    {
+      "name": "libeigen3-dev",
+      "version": "3.4.0-4build0.1",
+      "filename": "libeigen3-dev_3.4.0-4build0.1_all.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/e/eigen3/libeigen3-dev_3.4.0-4build0.1_all.deb",
+      "sha256": "56c05756bd5bf1e7d1c30ea545786a51684b3c796f8289b20cc803b2f1e6f754",
+      "size_bytes": 1056510
+    },
+    {
+      "name": "liblz4-1",
+      "version": "1.9.4-1build1.1",
+      "filename": "liblz4-1_1.9.4-1build1.1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/l/lz4/liblz4-1_1.9.4-1build1.1_arm64.deb",
+      "sha256": "65ab8cfe4aeb8205ef4f980500d2c8cb397cb49901ef12efad59f4ed7685cbe0",
+      "size_bytes": 64172
+    },
+    {
+      "name": "libsnappy1v5",
+      "version": "1.1.10-1build1",
+      "filename": "libsnappy1v5_1.1.10-1build1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/s/snappy/libsnappy1v5_1.1.10-1build1_arm64.deb",
+      "sha256": "5ec333edcfe04b83e11be0d08520b119b3a2e3809551af14fdb46b1521e776a4",
+      "size_bytes": 28622
+    },
+    {
+      "name": "libzstd1",
+      "version": "1.5.5+dfsg2-2build1.1",
+      "filename": "libzstd1_1.5.5+dfsg2-2build1.1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libz/libzstd/libzstd1_1.5.5+dfsg2-2build1.1_arm64.deb",
+      "sha256": "ea7d6e9fde577ea14dbf07fdfb74d6287eb09c6cba4a9d63abdcb87b0ec54bcc",
+      "size_bytes": 271278
+    },
+    {
+      "name": "zlib1g",
+      "version": "1:1.3.dfsg-3.1ubuntu2.3",
+      "filename": "zlib1g_1.3.dfsg-3.1ubuntu2.3_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/z/zlib/zlib1g_1.3.dfsg-3.1ubuntu2.3_arm64.deb",
+      "sha256": "84536bcf440cf0f988899b24b6c7df32cb9ff9f0dfa97d5e7efcc2dc088d15dc",
+      "size_bytes": 62084
+    },
+    {
+      "name": "libbz2-1.0",
+      "version": "1.0.8-5.1ubuntu0.1",
+      "filename": "libbz2-1.0_1.0.8-5.1ubuntu0.1_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/bzip2/libbz2-1.0_1.0.8-5.1ubuntu0.1_arm64.deb",
+      "sha256": "1a92811105f89bf948a629de99715ef23941ef93c901e0942883029069db3f94",
+      "size_bytes": 35936
+    },
+    {
+      "name": "liblzma5",
+      "version": "5.6.1+really5.4.5-1ubuntu0.4",
+      "filename": "liblzma5_5.6.1+really5.4.5-1ubuntu0.4_arm64.deb",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/x/xz-utils/liblzma5_5.6.1+really5.4.5-1ubuntu0.4_arm64.deb",
+      "sha256": "a1b42103a0fcf3264c3a124cf20ed89d593b8e27dfb6e05e71a0fe7504da827b",
+      "size_bytes": 126254
+    }
+  ],
+  "trimesh": {
+    "filename": "trimesh-4.10.1-py3-none-any.whl",
+    "url": "https://files.pythonhosted.org/packages/d5/0c/f08f0d16b4f97ec2ea6d542b9a70472a344384382fa3543a12ec417cc063/trimesh-4.10.1-py3-none-any.whl",
+    "sha256": "4e81fae696683dfe912ef54ce124869487d35d267b87e10fe07fc05ab62aaadb",
+    "size_bytes": 737037
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "upstream": "https://github.com/visualbruno/CuMesh",
+  "source_commit": "d10e54c30ddd03d11472c1431693f985501c7966",
+  "adaptation": "Core/Atlas-only package and topology2 collapse topology and boundary-collar guards. No cuBVH source or binary.",
+  "published_source": {
+    "filename": "selected-sources-core-topology2.tar.gz",
+    "sha256": "8bf9e37ea6d8fc86daa22578752180162dc05dcf1ce31c6ec1f04b92309bde5c",
+    "files": 29
+  },
+  "builder": {
+    "architecture": "Linux ARM64",
+    "python": "3.12.16",
+    "torch": "2.12.0+cu130",
+    "cuda": "13.0",
+    "nvcc": "13.0.88",
+    "gcc": "13.3.0",
+    "gpu_arch": "12.1+PTX",
+    "CXX11_ABI": true,
+    "privacy": "Neutral compiler source and ABI prefix maps; all 12 wheel members scanned."
+  },
+  "wheel": {
+    "filename": "cumesh-1.0+core.d10e54.topology2-cp312-cp312-linux_aarch64.whl",
+    "sha256": "a0bcfbef9f30d8b09aa3b10c47b937fb2b23ed8afa825a8852487634018b17df",
+    "size_bytes": 1763094
+  },
+  "binary_hashes": {
+    "cumesh/_C.cpython-312-aarch64-linux-gnu.so": {
+      "bytes": 4907488,
+      "sha256": "ac8fc49043fdf257aa2c00985d484df9cf3935c7b2b1f069783a6b5e60c953a3"
+    },
+    "cumesh/__init__.py": {
+      "bytes": 181,
+      "sha256": "5d96b13a817174419deb2186f6e8b4eefb9b663e250b9974bdd37a317a2a7115"
+    },
+    "cumesh/_xatlas.cpython-312-aarch64-linux-gnu.so": {
+      "bytes": 644712,
+      "sha256": "bdc8e71b38e44edbc3ec15d7c441a46f8d8717c57cc738869793b8e31ae9ad38"
+    },
+    "cumesh/cumesh.py": {
+      "bytes": 17203,
+      "sha256": "efef5ea7d00733bbd7e8261031900de909c4cbb3f214a54ae8964ca1cba0f320"
+    },
+    "cumesh/xatlas.py": {
+      "bytes": 8294,
+      "sha256": "793c755939bb03e831db2cf3ff8ca836a9622fd41bdf56886b8286633c339d93"
+    },
+    "cumesh-1.0+core.d10e54.topology2.dist-info/licenses/CORE_ONLY_NOTICES.txt": {
+      "bytes": 6243,
+      "sha256": "bb27562f32b142e5e94accb54c040f8f51a5968c25765e9ee6199c354903a048"
+    },
+    "cumesh-1.0+core.d10e54.topology2.dist-info/licenses/LICENSE": {
+      "bytes": 1093,
+      "sha256": "8eef85c2c0648a4d42a898f5e6d8bf35f532c477a6233a9647718b61228d275a"
+    },
+    "cumesh-1.0+core.d10e54.topology2.dist-info/licenses/third_party/xatlas/LICENSE": {
+      "bytes": 1075,
+      "sha256": "2c16d5b1c2808277fe975b4f70f0fd9afc9b3bcf04e6c676665a82cb2d5579e3"
+    },
+    "cumesh-1.0+core.d10e54.topology2.dist-info/METADATA": {
+      "bytes": 2915,
+      "sha256": "e9888f9b2b98c33ce0fe656af684eec47b9263609cbc893bea3d0988b1afd9fd"
+    },
+    "cumesh-1.0+core.d10e54.topology2.dist-info/WHEEL": {
+      "bytes": 105,
+      "sha256": "2639b55076b5f7d8a527b1516dfa2a0211b371e288ee1b758a933388074ab151"
+    },
+    "cumesh-1.0+core.d10e54.topology2.dist-info/top_level.txt": {
+      "bytes": 7,
+      "sha256": "77764c53cd4c951c66485681052e89fd444b4813155cace6fab1f8309f1002e9"
+    },
+    "cumesh-1.0+core.d10e54.topology2.dist-info/RECORD": {
+      "bytes": 1184,
+      "sha256": "3cc13e45721e2e65efb9d9917e0cfbbe06673008231f249bf1a1ddf2456be34b"
+    }
+  },
+  "verification": "Compiled from exact selected inputs; actual GB10 one-step simplification on a synthetic grid returned 128 to 124 faces. Optional release platform scope remains Linux ARM64 GB10. No byte-reproducible-build or legal clearance asserted."
+}
